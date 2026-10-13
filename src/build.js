@@ -1,6 +1,7 @@
 "use strict";
 // Bundles src/core.js for the browser and inlines it into src/page.html.
-// Writes the page for publishing and a standalone copy that opens from disk.
+// Writes the page for embedding, a standalone copy that opens from disk,
+// and public/index.html for static hosting.
 const fs = require("fs");
 const path = require("path");
 const esbuild = require("esbuild");
@@ -25,13 +26,17 @@ const page = fs
   .readFileSync(path.join(__dirname, "page.html"), "utf8")
   .replace("/*__BUNDLE__*/", () => bundle);
 
-fs.writeFileSync(path.join(root, "edmx-sang-postman.html"), page);
-fs.writeFileSync(
-  path.join(root, "edmx-sang-postman-offline.html"),
+const standalone =
   '<!doctype html><html lang="vi"><head><meta charset="utf-8">' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
-    "<style>body{margin:0}[hidden]{display:none!important}</style></head><body>" +
-    page +
-    "</body></html>",
-);
+  '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+  "<style>body{margin:0}[hidden]{display:none!important}</style></head><body>" +
+  page +
+  "</body></html>";
+
+fs.writeFileSync(path.join(root, "edmx-sang-postman.html"), page);
+fs.writeFileSync(path.join(root, "edmx-sang-postman-offline.html"), standalone);
+
+// Static hosts (Vercel, Netlify, ...) serve the site from public/.
+fs.mkdirSync(path.join(root, "public"), { recursive: true });
+fs.writeFileSync(path.join(root, "public", "index.html"), standalone);
 console.log("page bytes:", page.length);

@@ -34,6 +34,8 @@ Lệnh build sinh ra hai file ở thư mục gốc:
 - `edmx-sang-postman-offline.html`: trang hoàn chỉnh, mở trực tiếp từ đĩa.
 - `edmx-sang-postman.html`: cùng nội dung nhưng không có khung `<html>`, dùng để nhúng vào trang khác.
 
+Ngoài ra build còn ghi `public/index.html` (giống bản offline) để triển khai lên host tĩnh như Vercel: lệnh build `npm run build`, thư mục output `public`.
+
 Xem thử qua server cục bộ tại `http://127.0.0.1:4173`:
 
 ```bash
