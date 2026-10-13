@@ -4,6 +4,14 @@ const { xml2json } = require("odata-csdl");
 const { csdl2openapi } = require("odata-openapi");
 
 const METHODS = ["get", "post", "put", "patch", "delete"];
+const DEFAULT_TEXT = {
+  other: "Other",
+  updatable: "Updatable fields: ",
+  ifMatch: "Enable if the entity uses ETags",
+  csrf1: "Fetch a CSRF token before every write request (POST/PUT/PATCH/DELETE).",
+  csrf2: "SAP Gateway rejects write requests without the x-csrf-token header.",
+  csrfError: "Could not fetch a CSRF token",
+};
 const POSTMAN_SCHEMA =
   "https://schema.getpostman.com/json/collection/v2.1.0/collection.json";
 
@@ -168,10 +176,12 @@ function plain(text) {
   return String(text || "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
 }
 
-function csrfScript(auth, sapClient) {
+function csrfScript(auth, sapClient, text) {
+  // The message is embedded in a single-quoted string of the generated script.
+  const quoted = (v) => String(v).replace(/[\\']/g, (c) => "\\" + c);
   const lines = [
-    "// Lấy CSRF token trước mỗi request ghi (POST/PUT/PATCH/DELETE).",
-    "// SAP Gateway từ chối request ghi nếu thiếu header x-csrf-token.",
+    "// " + text.csrf1,
+    "// " + text.csrf2,
     "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
     "    const headers = { 'x-csrf-token': 'Fetch', 'Accept': 'application/json' };",
   ];
@@ -196,7 +206,7 @@ function csrfScript(auth, sapClient) {
     "        method: 'GET',",
     "        header: headers",
     "    }, function (err, res) {",
-    "        if (err) { console.error('Không lấy được CSRF token', err); return; }",
+    "        if (err) { console.error('" + quoted(text.csrfError) + "', err); return; }",
     "        const csrf = res.headers.get('x-csrf-token');",
     "        if (csrf) { pm.request.headers.upsert({ key: 'x-csrf-token', value: csrf }); }",
     "    });",
@@ -210,6 +220,7 @@ function csrfScript(auth, sapClient) {
  */
 function toPostman(openapi, opts = {}) {
   const auth = opts.auth || "basic";
+  const text = Object.assign({}, DEFAULT_TEXT, opts.text);
   const sapClient = (opts.sapClient || "").trim();
   const baseUrl = (openapi.servers && openapi.servers[0] && openapi.servers[0].url) || "";
   const pathVars = new Set();
@@ -281,7 +292,7 @@ function toPostman(openapi, opts = {}) {
             if (fields.length) {
               description +=
                 (description ? "\n\n" : "") +
-                "Các field có thể cập nhật: " +
+                text.updatable +
                 fields.join(", ");
             }
           }
@@ -302,7 +313,7 @@ function toPostman(openapi, opts = {}) {
         header.push({
           key: "If-Match",
           value: "*",
-          description: "Bật lên nếu entity dùng ETag",
+          description: text.ifMatch,
           disabled: true,
         });
       }
@@ -315,7 +326,7 @@ function toPostman(openapi, opts = {}) {
       if (query.length) request.url.query = query;
       if (description) request.description = description;
 
-      const tag = (op.tags && op.tags[0]) || "Khác";
+      const tag = (op.tags && op.tags[0]) || text.other;
       if (!folders.has(tag)) folders.set(tag, []);
       folders.get(tag).push({
         name: plain(op.summary) || method.toUpperCase() + " " + path,
@@ -378,7 +389,7 @@ function toPostman(openapi, opts = {}) {
     collection.event = [
       {
         listen: "prerequest",
-        script: { type: "text/javascript", exec: csrfScript(auth, sapClient) },
+        script: { type: "text/javascript", exec: csrfScript(auth, sapClient, text) },
       },
     ];
   }

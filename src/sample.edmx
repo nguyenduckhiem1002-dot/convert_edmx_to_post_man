@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:sap="http://www.sap.com/Protocols/SAPData">
+ <edmx:DataServices m:DataServiceVersion="2.0">
+  <Schema Namespace="ZDEMO_PURCHASEORDER_SRV" xml:lang="en" sap:schema-version="1" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+   <EntityType Name="A_PurchaseOrderType" sap:label="Purchase Order" sap:content-version="1">
+    <Key><PropertyRef Name="PurchaseOrder"/></Key>
+    <Property Name="PurchaseOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:label="Purchase Order"/>
+    <Property Name="CompanyCode" Type="Edm.String" MaxLength="4" sap:label="Company Code"/>
+    <Property Name="PurchaseOrderType" Type="Edm.String" MaxLength="4" sap:label="Document Type"/>
+    <Property Name="Supplier" Type="Edm.String" MaxLength="10" sap:label="Supplier"/>
+    <Property Name="PurchasingOrganization" Type="Edm.String" MaxLength="4" sap:label="Purchasing Org."/>
+    <Property Name="PurchasingGroup" Type="Edm.String" MaxLength="3" sap:label="Purchasing Group"/>
+    <Property Name="PurchaseOrderDate" Type="Edm.DateTime" Precision="0" sap:display-format="Date" sap:label="Purchase Order Date"/>
+    <Property Name="DocumentCurrency" Type="Edm.String" MaxLength="5" sap:label="Currency" sap:semantics="currency-code"/>
+    <NavigationProperty Name="to_PurchaseOrderItem" Relationship="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" FromRole="FromRole_assoc_Header_Item" ToRole="ToRole_assoc_Header_Item"/>
+   </EntityType>
+   <EntityType Name="A_PurchaseOrderItemType" sap:label="Item" sap:content-version="1">
+    <Key><PropertyRef Name="PurchaseOrder"/><PropertyRef Name="PurchaseOrderItem"/></Key>
+    <Property Name="PurchaseOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:label="Purchase Order"/>
+    <Property Name="PurchaseOrderItem" Type="Edm.String" Nullable="false" MaxLength="5" sap:display-format="NonNegative" sap:label="Item"/>
+    <Property Name="Material" Type="Edm.String" MaxLength="40" sap:label="Material"/>
+    <Property Name="Plant" Type="Edm.String" MaxLength="4" sap:label="Plant"/>
+    <Property Name="OrderQuantity" Type="Edm.Decimal" Precision="13" Scale="3" sap:unit="PurchaseOrderQuantityUnit" sap:label="Order Quantity"/>
+    <Property Name="PurchaseOrderQuantityUnit" Type="Edm.String" MaxLength="3" sap:label="Order Unit" sap:semantics="unit-of-measure"/>
+    <Property Name="NetPriceAmount" Type="Edm.Decimal" Precision="12" Scale="3" sap:label="Net Order Price"/>
+    <NavigationProperty Name="to_PurchaseOrder" Relationship="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" FromRole="ToRole_assoc_Header_Item" ToRole="FromRole_assoc_Header_Item"/>
+   </EntityType>
+   <Association Name="assoc_Header_Item" sap:content-version="1">
+    <End Type="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderType" Multiplicity="1" Role="FromRole_assoc_Header_Item"/>
+    <End Type="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderItemType" Multiplicity="*" Role="ToRole_assoc_Header_Item"/>
+   </Association>
+   <EntityContainer Name="ZDEMO_PURCHASEORDER_SRV_Entities" m:IsDefaultEntityContainer="true" sap:supported-formats="atom json xlsx">
+    <EntitySet Name="A_PurchaseOrder" EntityType="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderType" sap:content-version="1"/>
+    <EntitySet Name="A_PurchaseOrderItem" EntityType="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderItemType" sap:content-version="1"/>
+    <AssociationSet Name="assoc_Header_Item_Set" Association="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" sap:content-version="1">
+     <End EntitySet="A_PurchaseOrder" Role="FromRole_assoc_Header_Item"/>
+     <End EntitySet="A_PurchaseOrderItem" Role="ToRole_assoc_Header_Item"/>
+    </AssociationSet>
+   </EntityContainer>
+   <atom:link rel="self" href="/sap/opu/odata/sap/ZDEMO_PURCHASEORDER_SRV/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+  </Schema>
+ </edmx:DataServices>
+</edmx:Edmx>

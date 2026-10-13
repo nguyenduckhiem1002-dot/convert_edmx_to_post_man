@@ -2,6 +2,8 @@
 
 Đổi file metadata OData (`.edmx`, nội dung của `$metadata`) thành **Postman Collection v2.1** và **OpenAPI 3**. Chạy hoàn toàn trong trình duyệt, file không được gửi đi đâu. Nhận OData V2, V3 và V4.
 
+Giao diện có tiếng Anh và tiếng Việt.
+
 ## Dùng ngay
 
 Tải [edmx-sang-postman-offline.html](edmx-sang-postman-offline.html) về và mở bằng trình duyệt. Không cần cài gì.
@@ -29,14 +31,15 @@ npm install
 npm run build
 ```
 
-Lệnh build sinh ra hai file ở thư mục gốc:
+Lệnh build sinh ra:
 
-- `edmx-sang-postman-offline.html`: trang hoàn chỉnh, mở trực tiếp từ đĩa.
-- `edmx-sang-postman.html`: cùng nội dung nhưng không có khung `<html>`, dùng để nhúng vào trang khác.
+| Kết quả | Dùng để |
+| --- | --- |
+| `public/` | Website tĩnh để triển khai (Vercel: lệnh build `npm run build`, thư mục output `public`) |
+| `edmx-sang-postman-offline.html` | Một file duy nhất, đủ mọi ngôn ngữ, mở trực tiếp từ đĩa |
+| `edmx-sang-postman.html` | Cùng nội dung nhưng không có khung `<html>`, để nhúng vào trang khác |
 
-Ngoài ra build còn ghi `public/index.html` (giống bản offline) để triển khai lên host tĩnh như Vercel: lệnh build `npm run build`, thư mục output `public`.
-
-Xem thử qua server cục bộ tại `http://127.0.0.1:4173`:
+Xem thử website tại `http://127.0.0.1:4173`:
 
 ```bash
 npm run serve
@@ -48,13 +51,41 @@ Chạy phần lõi với một file EDMX bằng Node:
 node src/test.js src/core.js duong-dan/toi/file.edmx
 ```
 
+## Ngôn ngữ
+
+Mọi chuỗi hiển thị nằm trong [src/i18n.js](src/i18n.js). Để thêm một ngôn ngữ:
+
+1. Sao chép khối `en` và đổi khóa thành mã ngôn ngữ, ví dụ `de`.
+2. Dịch các giá trị. Giữ nguyên thẻ HTML như `<code>` và các chỗ điền như `{file}`.
+3. Chạy `npm run build`. Build báo lỗi nếu thiếu khóa nào.
+
+Ngôn ngữ mới tự có trang riêng (`/de/`), tự xuất hiện trong nút chuyển ngôn ngữ, trong thẻ `hreflang` và trong `sitemap.xml`. Ngôn ngữ ở trang gốc `/` là giá trị `fallback` trong file đó.
+
+Trên website, mỗi ngôn ngữ là một trang tĩnh riêng để công cụ tìm kiếm đọc được. Người mở trang gốc lần đầu được chuyển sang ngôn ngữ của trình duyệt nếu có; sau đó trang nhớ ngôn ngữ họ chọn. Bản một file đổi ngôn ngữ ngay tại chỗ.
+
+## SEO
+
+Mỗi trang trong `public/` có sẵn tiêu đề, mô tả, thẻ Open Graph, dữ liệu có cấu trúc (`WebApplication` và `FAQPage`), `favicon.svg` và `robots.txt`.
+
+Thẻ `canonical`, `hreflang` và `sitemap.xml` cần địa chỉ website. Build tự lấy tên miền production khi chạy trên Vercel. Ở nơi khác, đặt biến `SITE_URL`:
+
+```bash
+SITE_URL=https://ten-mien-cua-ban.com npm run build
+```
+
+Chưa có ảnh xem trước khi chia sẻ link (`og:image`).
+
 ## Cấu trúc
 
 | File | Vai trò |
 | --- | --- |
 | `src/core.js` | Lõi: EDMX → OpenAPI 3 → Postman Collection |
-| `src/page.html` | Giao diện |
-| `src/build.js` | Đóng gói lõi bằng esbuild và nhúng vào trang |
+| `src/i18n.js` | Chuỗi hiển thị của từng ngôn ngữ |
+| `src/page.body.html` | Khung trang, các chỗ chữ đánh dấu bằng `data-i18n` |
+| `src/page.css` | Giao diện |
+| `src/page.js` | Hành vi của trang |
+| `src/sample.edmx` | File mẫu hiện khi mở trang |
+| `src/build.js` | Đóng gói bằng esbuild, dựng trang cho từng ngôn ngữ, sinh thẻ SEO |
 | `src/serve.js` | Server xem thử |
 | `src/test.js` | Chạy thử lõi bằng Node |
 

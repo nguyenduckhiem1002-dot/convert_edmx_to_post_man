@@ -1,0 +1,173 @@
+<a class="skip" href="#converter" data-i18n="skip"></a>
+<div class="wrap">
+  <header class="top">
+    <span class="brand" data-i18n="meta.name"></span>
+    <div class="top-links">
+      <nav class="langs" data-i18n-attr="aria-label:nav.label">[[langs]]</nav>
+      <a class="repo" href="[[repo]]" rel="noopener" data-i18n="nav.source"></a>
+    </div>
+  </header>
+
+  <main id="converter">
+    <div class="intro">
+      <h1 data-i18n="h1"></h1>
+      <p data-i18n="lede"></p>
+    </div>
+
+    <div class="bench">
+      <form class="panel" id="form" novalidate>
+        <section class="group" aria-labelledby="t-src">
+          <h2 id="t-src" data-i18n="src.title"></h2>
+          <label class="drop" id="drop" for="file">
+            <input class="sr-only" type="file" id="file" accept=".edmx,.xml,text/xml,application/xml">
+            <strong data-i18n="src.drop"></strong>
+            <span data-i18n="src.dropHint"></span>
+          </label>
+          <div class="current">
+            <span class="name" id="cur-name"></span>
+            <span class="size" id="cur-size"></span>
+            <span class="tag" id="cur-sample" data-i18n="src.sample" hidden></span>
+          </div>
+          <details class="more" id="paste-box">
+            <summary data-i18n="src.paste"></summary>
+            <div class="paste">
+              <label class="sr-only" for="paste" data-i18n="src.pasteLabel"></label>
+              <textarea id="paste" spellcheck="false" placeholder="&lt;edmx:Edmx Version=&quot;1.0&quot; ..."></textarea>
+              <button class="btn small" type="button" id="paste-use" data-i18n="src.pasteUse"></button>
+            </div>
+          </details>
+        </section>
+
+        <section class="group" aria-labelledby="t-url">
+          <h2 id="t-url" data-i18n="url.title"></h2>
+          <div class="fields">
+            <div class="field">
+              <label for="opt-scheme" data-i18n="url.scheme"></label>
+              <select id="opt-scheme"><option value="https">https</option><option value="http">http</option></select>
+            </div>
+            <div class="field">
+              <label for="opt-host" data-i18n="url.host"></label>
+              <input class="mono" type="text" id="opt-host" value="{{host}}" spellcheck="false" autocomplete="off" autocapitalize="off">
+            </div>
+            <div class="field wide">
+              <label for="opt-basepath" data-i18n="url.path"></label>
+              <input class="mono" type="text" id="opt-basepath" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="h-basepath">
+              <span class="hint" id="h-basepath" data-i18n="url.pathHint"></span>
+            </div>
+            <div class="field">
+              <label for="opt-client" data-i18n="url.client"></label>
+              <input class="mono" type="text" id="opt-client" inputmode="numeric" spellcheck="false" autocomplete="off" data-i18n-attr="placeholder:url.clientPh">
+            </div>
+            <div class="field">
+              <label for="opt-auth" data-i18n="url.auth"></label>
+              <select id="opt-auth">
+                <option value="basic" data-i18n="auth.basic"></option>
+                <option value="bearer" data-i18n="auth.bearer"></option>
+                <option value="none" data-i18n="auth.none"></option>
+              </select>
+            </div>
+            <div class="field wide">
+              <label for="opt-name" data-i18n="url.name"></label>
+              <input type="text" id="opt-name" spellcheck="false" autocomplete="off" aria-describedby="h-name">
+              <span class="hint" id="h-name" data-i18n="url.nameHint"></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="group" aria-labelledby="t-opt">
+          <h2 id="t-opt" data-i18n="opt.title"></h2>
+          <div class="checks">
+            <div class="check">
+              <input type="checkbox" id="opt-csrf" checked aria-describedby="h-csrf">
+              <label for="opt-csrf" data-i18n="opt.csrf"></label>
+              <span class="hint" id="h-csrf" data-i18n="opt.csrfHint"></span>
+            </div>
+            <div class="check">
+              <input type="checkbox" id="opt-top" checked aria-describedby="h-top">
+              <label for="opt-top" data-i18n="opt.top"></label>
+              <span class="hint" id="h-top" data-i18n="opt.topHint"></span>
+            </div>
+            <div class="check">
+              <input type="checkbox" id="opt-deep" checked aria-describedby="h-deep">
+              <label for="opt-deep" data-i18n="opt.deep"></label>
+              <span class="hint" id="h-deep" data-i18n="opt.deepHint"></span>
+            </div>
+            <div class="check">
+              <input type="checkbox" id="opt-batch">
+              <label for="opt-batch" data-i18n="opt.batch"></label>
+            </div>
+          </div>
+        </section>
+      </form>
+
+      <section class="result" aria-labelledby="r-label">
+        <div class="note err" id="error" role="alert" hidden>
+          <strong data-i18n="err.title"></strong>
+          <p id="error-text"></p>
+          <p data-i18n="err.hint"></p>
+        </div>
+
+        <div class="result" id="ok">
+          <div class="head">
+            <p class="res-label" id="r-label" data-i18n="res.label"></p>
+            <h2 id="r-name"></h2>
+            <div class="meta" id="r-meta"></div>
+            <div class="server" id="r-server"></div>
+          </div>
+
+          <div class="act">
+            <div class="actions">
+              <button class="btn primary" type="button" id="dl-postman" data-i18n="res.dlPostman"></button>
+              <button class="btn" type="button" id="dl-openapi" data-i18n="res.dlOpenapi"></button>
+              <button class="btn quiet" type="button" id="cp-postman" data-i18n="res.copy"></button>
+            </div>
+            <div class="status" id="status" role="status" aria-live="polite"></div>
+            <div class="fallback" id="fallback" hidden>
+              <label for="fallback-text" id="fallback-label"></label>
+              <textarea id="fallback-text" readonly spellcheck="false"></textarea>
+            </div>
+          </div>
+
+          <div class="folders">
+            <h3 data-i18n="res.folders"></h3>
+            <div class="flist" id="flist"></div>
+          </div>
+
+          <details class="note warn" id="warnings" hidden>
+            <summary id="warn-title"></summary>
+            <p data-i18n="warn.body"></p>
+            <ul id="warn-list"></ul>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <div class="learn">
+      <div>
+        <h2 data-i18n="steps.title"></h2>
+        <ol class="steps">
+          <li data-i18n="steps.1"></li>
+          <li data-i18n="steps.2"></li>
+          <li id="step-vars">[[step3]]</li>
+          <li data-i18n="steps.4"></li>
+        </ol>
+      </div>
+      <div>
+        <h2 data-i18n="faq.title"></h2>
+        <div class="faq">
+          <div><h3 data-i18n="faq.q1"></h3><p data-i18n="faq.a1"></p></div>
+          <div><h3 data-i18n="faq.q2"></h3><p data-i18n="faq.a2"></p></div>
+          <div><h3 data-i18n="faq.q3"></h3><p data-i18n="faq.a3"></p></div>
+          <div><h3 data-i18n="faq.q4"></h3><p data-i18n="faq.a4"></p></div>
+          <div><h3 data-i18n="faq.q5"></h3><p data-i18n="faq.a5"></p></div>
+          <div><h3 data-i18n="faq.q6"></h3><p data-i18n="faq.a6"></p></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <span data-i18n="foot"></span>
+    <a href="[[repo]]" rel="noopener" data-i18n="nav.source"></a>
+  </footer>
+</div>
