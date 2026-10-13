@@ -1,0 +1,16 @@
+{
+  "name": "convert-edmx-to-postman",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Đổi file metadata OData (.edmx) thành Postman Collection và OpenAPI 3, chạy trong trình duyệt",
+  "scripts": {
+    "build": "node src/build.js",
+    "serve": "node src/serve.js"
+  },
+  "dependencies": {
+    "odata-openapi": "^0.29.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

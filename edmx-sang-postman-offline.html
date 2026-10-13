@@ -1,0 +1,726 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style></head><body><title>EDMX sang Postman</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a two-pane workbench. Source file and options sit in one ruled panel on the left;
+   the generated collection (name, downloads, folder table) reads openly on the right. Stacks on phones. */
+:root {
+  --bg: #f2f5f5;
+  --surface: #ffffff;
+  --sunken: #e9eeee;
+  --ink: #132120;
+  --muted: #586967;
+  --line: #d3dcdb;
+  --accent: #0b6b63;
+  --accent-ink: #ffffff;
+  --accent-soft: #d9ece9;
+  --get: #17764a;
+  --post: #9a5a08;
+  --patch: #6548bd;
+  --put: #235fa4;
+  --delete: #b3372f;
+  --warn-bg: #fbf1d8;
+  --warn-ink: #6d4a05;
+  --err-bg: #fbe5e2;
+  --err-ink: #8c241d;
+
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1413; --surface: #141d1c; --sunken: #0a100f; --ink: #e3ebea; --muted: #94a5a3;
+    --line: #283634; --accent: #55c7b9; --accent-ink: #05201d; --accent-soft: #15302d;
+    --get: #5fd093; --post: #e5a94e; --patch: #a996f0; --put: #7fb2ee; --delete: #f08a82;
+    --warn-bg: #2e2610; --warn-ink: #ecd08a; --err-bg: #331613; --err-ink: #f5aaa3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1413; --surface: #141d1c; --sunken: #0a100f; --ink: #e3ebea; --muted: #94a5a3;
+  --line: #283634; --accent: #55c7b9; --accent-ink: #05201d; --accent-soft: #15302d;
+  --get: #5fd093; --post: #e5a94e; --patch: #a996f0; --put: #7fb2ee; --delete: #f08a82;
+  --warn-bg: #2e2610; --warn-ink: #ecd08a; --err-bg: #331613; --err-ink: #f5aaa3;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 28px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+code, .mono { font-family: var(--font-mono); }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Masthead */
+.masthead { display: flex; flex-direction: column; gap: 6px; }
+.masthead h1 {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+}
+.masthead h1 .arrow { color: var(--accent); font-family: var(--font-mono); font-weight: 500; }
+.masthead p { color: var(--muted); max-width: 65ch; }
+
+.bench {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+/* Left panel */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.panel > section { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.panel > section + section { border-top: 1px solid var(--line); }
+.label {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+
+.drop {
+  display: flex; flex-direction: column; gap: 4px;
+  border: 1.5px dashed var(--line); border-radius: var(--radius);
+  background: var(--bg);
+  padding: 16px; cursor: pointer;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop strong { font-weight: 600; }
+.drop span { color: var(--muted); font-size: 13.5px; }
+
+.current {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  font-size: 13.5px; min-width: 0;
+}
+.current .name { font-family: var(--font-mono); font-weight: 500; overflow-wrap: anywhere; min-width: 0; }
+.current .size { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 2px 7px; border-radius: 99px;
+  background: var(--warn-bg); color: var(--warn-ink);
+}
+
+details > summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+details > summary:hover { color: var(--ink); }
+details[open] > summary { margin-bottom: 10px; }
+.paste { display: flex; flex-direction: column; gap: 8px; }
+
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 13px; font-weight: 500; }
+.field small, .check small { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+@media (max-width: 420px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+
+input[type="text"], select, textarea {
+  width: 100%; min-width: 0;
+  font: inherit; font-size: 14px; color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 7px 9px;
+}
+input[type="text"].mono, textarea { font-family: var(--font-mono); font-size: 13px; }
+textarea { resize: vertical; min-height: 96px; }
+input[type="text"]:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent);
+}
+
+.checks { display: flex; flex-direction: column; gap: 12px; }
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.check input { margin: 4px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
+.check label { font-size: 14px; font-weight: 500; }
+.check small { grid-column: 2; }
+
+/* Buttons */
+.btn {
+  font: inherit; font-size: 14px; font-weight: 600;
+  border-radius: var(--radius); border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+  padding: 8px 14px; cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.quiet { background: transparent; }
+.btn.small { font-size: 13px; padding: 6px 10px; align-self: flex-start; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Result */
+.result { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.head { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.head h2 {
+  font-family: var(--font-mono); font-size: 20px; font-weight: 600; line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 13.5px; }
+.meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.server {
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.status { font-size: 13.5px; color: var(--muted); min-height: 1.55em; }
+
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+tbody tr:last-child td { border-bottom: 0; }
+thead th {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--muted); background: var(--bg); white-space: nowrap;
+}
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+td.set { min-width: 180px; }
+td.set .n { font-family: var(--font-mono); font-weight: 500; overflow-wrap: anywhere; }
+td.set .d { color: var(--muted); font-size: 12.5px; }
+td.num.zero { color: var(--line); }
+td.total { font-weight: 600; }
+.m-GET { color: var(--get); } .m-POST { color: var(--post); } .m-PATCH { color: var(--patch); }
+.m-PUT { color: var(--put); } .m-DELETE { color: var(--delete); }
+td.num:not(.zero):not(.total) { font-weight: 600; }
+
+.note {
+  border-radius: var(--radius); padding: 12px 14px; font-size: 13.5px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.note.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note.err { background: var(--err-bg); color: var(--err-ink); }
+.note summary { color: inherit; font-weight: 600; }
+.note ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.note li { font-family: var(--font-mono); font-size: 12px; overflow-wrap: anywhere; }
+.note p { overflow-wrap: anywhere; }
+
+.steps { display: flex; flex-direction: column; gap: 10px; }
+.steps ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+.steps code {
+  font-size: 12.5px; background: var(--sunken); border-radius: 4px; padding: 1px 5px;
+}
+.fallback { display: flex; flex-direction: column; gap: 6px; }
+.fallback textarea { min-height: 160px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .drop, .btn { transition: border-color 0.12s, background-color 0.12s; }
+}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>EDMX <span class="arrow">→</span> Postman</h1>
+    <p>Đổi file metadata OData (<code>.edmx</code>) thành Postman Collection và OpenAPI 3. File được xử lý ngay trong trình duyệt, không gửi đi đâu.</p>
+  </header>
+
+  <div class="bench">
+    <div class="panel">
+      <section aria-labelledby="l-src">
+        <div class="label" id="l-src">File nguồn</div>
+        <label class="drop" id="drop" for="file">
+          <input class="sr-only" type="file" id="file" accept=".edmx,.xml,text/xml,application/xml">
+          <strong>Chọn file .edmx hoặc kéo thả vào đây</strong>
+          <span>Nhận metadata OData V2, V3 và V4 (nội dung của <code>$metadata</code>).</span>
+        </label>
+        <div class="current" id="current">
+          <span class="name" id="cur-name"></span>
+          <span class="size" id="cur-size"></span>
+          <span class="tag" id="cur-sample">FILE MẪU</span>
+        </div>
+        <details id="paste-box">
+          <summary>Hoặc dán nội dung XML</summary>
+          <div class="paste">
+            <label class="sr-only" for="paste">Nội dung XML</label>
+            <textarea id="paste" spellcheck="false" placeholder="&lt;edmx:Edmx Version=&quot;1.0&quot; ..."></textarea>
+            <button class="btn small" type="button" id="paste-use">Dùng nội dung này</button>
+          </div>
+        </details>
+      </section>
+
+      <section aria-labelledby="l-url">
+        <div class="label" id="l-url">Địa chỉ service</div>
+        <div class="fields">
+          <div class="field">
+            <label for="opt-scheme">Giao thức</label>
+            <select id="opt-scheme"><option value="https">https</option><option value="http">http</option></select>
+          </div>
+          <div class="field">
+            <label for="opt-host">Host</label>
+            <input class="mono" type="text" id="opt-host" value="{{host}}" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="field wide">
+            <label for="opt-basepath">Đường dẫn service</label>
+            <input class="mono" type="text" id="opt-basepath" spellcheck="false" autocomplete="off">
+            <small>Tự lấy từ file khi có. Để host là <code>{{host}}</code> thì bạn điền host thật trong Postman.</small>
+          </div>
+          <div class="field">
+            <label for="opt-client">sap-client</label>
+            <input class="mono" type="text" id="opt-client" placeholder="ví dụ 100" inputmode="numeric" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="opt-auth">Xác thực</label>
+            <select id="opt-auth">
+              <option value="basic">Basic (user/password)</option>
+              <option value="bearer">Bearer token</option>
+              <option value="none">Không đặt</option>
+            </select>
+          </div>
+          <div class="field wide">
+            <label for="opt-name">Tên collection</label>
+            <input type="text" id="opt-name" spellcheck="false" autocomplete="off">
+            <small>Tài khoản không nhập ở đây. Collection dùng biến để bạn điền trong Postman.</small>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="l-opt">
+        <div class="label" id="l-opt">Tùy chọn collection</div>
+        <div class="checks">
+          <div class="check">
+            <input type="checkbox" id="opt-csrf" checked>
+            <label for="opt-csrf">Tự lấy CSRF token</label>
+            <small>Thêm script chạy trước mỗi POST/PATCH/DELETE để lấy <code>x-csrf-token</code>. Cần cho SAP Gateway.</small>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="opt-top" checked>
+            <label for="opt-top">Bật sẵn <code>$top=50</code></label>
+            <small>Request đọc danh sách chỉ lấy 50 dòng đầu, tránh kéo cả bảng.</small>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="opt-deep" checked>
+            <label for="opt-deep">Body tạo mới kèm dòng con</label>
+            <small>POST có sẵn khung cho các navigation dạng danh sách (deep insert), ví dụ header kèm item.</small>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="opt-batch">
+            <label for="opt-batch">Bỏ request <code>$batch</code></label>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="result" id="result">
+      <div class="note err" id="error" hidden>
+        <strong>Không đọc được file này</strong>
+        <p id="error-text"></p>
+        <p>Hãy kiểm tra đây có đúng là nội dung của <code>$metadata</code> (bắt đầu bằng <code>&lt;edmx:Edmx</code>).</p>
+      </div>
+
+      <div id="ok" class="result">
+        <div class="head">
+          <div class="label">Collection sinh ra</div>
+          <h2 id="r-name"></h2>
+          <div class="meta" id="r-meta"></div>
+          <div class="server" id="r-server"></div>
+        </div>
+
+        <div>
+          <div class="actions">
+            <button class="btn primary" type="button" id="dl-postman">Tải Postman Collection</button>
+            <button class="btn" type="button" id="dl-openapi">Tải OpenAPI 3</button>
+            <button class="btn quiet" type="button" id="cp-postman">Sao chép collection</button>
+          </div>
+          <div class="status" id="status" role="status" aria-live="polite"></div>
+          <div class="fallback" id="fallback" hidden>
+            <label for="fallback-text" id="fallback-label"></label>
+            <textarea id="fallback-text" readonly spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="tablebox">
+          <table>
+            <thead id="t-head"></thead>
+            <tbody id="t-body"></tbody>
+          </table>
+        </div>
+
+        <details class="note warn" id="warnings" hidden>
+          <summary id="warn-title"></summary>
+          <p>Đây là các annotation trong file trỏ tới phần tử không có trong metadata. Chúng bị bỏ qua, các request vẫn được sinh đủ.</p>
+          <ul id="warn-list"></ul>
+        </details>
+
+        <div class="steps">
+          <div class="label">Đưa vào Postman</div>
+          <ol>
+            <li>Bấm <b>Tải Postman Collection</b> để lưu file <code>.postman_collection.json</code>.</li>
+            <li>Trong Postman bấm <b>Import</b> rồi kéo file vừa tải vào.</li>
+            <li>Mở tab <b>Variables</b> của collection, điền <span id="vars-hint"></span>.</li>
+            <li>Chạy thử một request GET. Body của PATCH để trống có chủ ý: danh sách field nằm trong phần mô tả request.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/plain" id="sample-edmx"><?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:sap="http://www.sap.com/Protocols/SAPData">
+ <edmx:DataServices m:DataServiceVersion="2.0">
+  <Schema Namespace="ZDEMO_PURCHASEORDER_SRV" xml:lang="en" sap:schema-version="1" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+   <EntityType Name="A_PurchaseOrderType" sap:label="Purchase Order" sap:content-version="1">
+    <Key><PropertyRef Name="PurchaseOrder"/></Key>
+    <Property Name="PurchaseOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:label="Purchase Order"/>
+    <Property Name="CompanyCode" Type="Edm.String" MaxLength="4" sap:label="Company Code"/>
+    <Property Name="PurchaseOrderType" Type="Edm.String" MaxLength="4" sap:label="Document Type"/>
+    <Property Name="Supplier" Type="Edm.String" MaxLength="10" sap:label="Supplier"/>
+    <Property Name="PurchasingOrganization" Type="Edm.String" MaxLength="4" sap:label="Purchasing Org."/>
+    <Property Name="PurchasingGroup" Type="Edm.String" MaxLength="3" sap:label="Purchasing Group"/>
+    <Property Name="PurchaseOrderDate" Type="Edm.DateTime" Precision="0" sap:display-format="Date" sap:label="Purchase Order Date"/>
+    <Property Name="DocumentCurrency" Type="Edm.String" MaxLength="5" sap:label="Currency" sap:semantics="currency-code"/>
+    <NavigationProperty Name="to_PurchaseOrderItem" Relationship="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" FromRole="FromRole_assoc_Header_Item" ToRole="ToRole_assoc_Header_Item"/>
+   </EntityType>
+   <EntityType Name="A_PurchaseOrderItemType" sap:label="Item" sap:content-version="1">
+    <Key><PropertyRef Name="PurchaseOrder"/><PropertyRef Name="PurchaseOrderItem"/></Key>
+    <Property Name="PurchaseOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:label="Purchase Order"/>
+    <Property Name="PurchaseOrderItem" Type="Edm.String" Nullable="false" MaxLength="5" sap:display-format="NonNegative" sap:label="Item"/>
+    <Property Name="Material" Type="Edm.String" MaxLength="40" sap:label="Material"/>
+    <Property Name="Plant" Type="Edm.String" MaxLength="4" sap:label="Plant"/>
+    <Property Name="OrderQuantity" Type="Edm.Decimal" Precision="13" Scale="3" sap:unit="PurchaseOrderQuantityUnit" sap:label="Order Quantity"/>
+    <Property Name="PurchaseOrderQuantityUnit" Type="Edm.String" MaxLength="3" sap:label="Order Unit" sap:semantics="unit-of-measure"/>
+    <Property Name="NetPriceAmount" Type="Edm.Decimal" Precision="12" Scale="3" sap:label="Net Order Price"/>
+    <NavigationProperty Name="to_PurchaseOrder" Relationship="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" FromRole="ToRole_assoc_Header_Item" ToRole="FromRole_assoc_Header_Item"/>
+   </EntityType>
+   <Association Name="assoc_Header_Item" sap:content-version="1">
+    <End Type="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderType" Multiplicity="1" Role="FromRole_assoc_Header_Item"/>
+    <End Type="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderItemType" Multiplicity="*" Role="ToRole_assoc_Header_Item"/>
+   </Association>
+   <EntityContainer Name="ZDEMO_PURCHASEORDER_SRV_Entities" m:IsDefaultEntityContainer="true" sap:supported-formats="atom json xlsx">
+    <EntitySet Name="A_PurchaseOrder" EntityType="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderType" sap:content-version="1"/>
+    <EntitySet Name="A_PurchaseOrderItem" EntityType="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderItemType" sap:content-version="1"/>
+    <AssociationSet Name="assoc_Header_Item_Set" Association="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" sap:content-version="1">
+     <End EntitySet="A_PurchaseOrder" Role="FromRole_assoc_Header_Item"/>
+     <End EntitySet="A_PurchaseOrderItem" Role="ToRole_assoc_Header_Item"/>
+    </AssociationSet>
+   </EntityContainer>
+   <atom:link rel="self" href="/sap/opu/odata/sap/ZDEMO_PURCHASEORDER_SRV/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+  </Schema>
+ </edmx:DataServices>
+</edmx:Edmx>
+</script>
+
+<script>var EdmxTool=(()=>{var Se=(c,h)=>()=>{try{return h||c((h={exports:{}}).exports,h),h.exports}catch(T){throw h=0,T}};var Ye=Se((Gt,He)=>{He.exports={}});var ze=Se(je=>{(function(c){c.parser=function(t,e){return new T(t,e)},c.SAXParser=T,c.SAXStream=P,c.createStream=_,c.MAX_BUFFER_LENGTH=64*1024;var h=["comment","sgmlDecl","textNode","tagName","doctype","procInstName","procInstBody","entity","attribName","attribValue","cdata","script"];c.EVENTS=["text","processinginstruction","sgmldeclaration","doctype","comment","opentagstart","attribute","opentag","closetag","opencdata","cdata","closecdata","error","end","ready","script","opennamespace","closenamespace"];function T(t,e){if(!(this instanceof T))return new T(t,e);var o=this;S(o),o.q=o.c="",o.bufferCheckPosition=c.MAX_BUFFER_LENGTH,o.encoding=null,o.opt=e||{},o.opt.lowercase=o.opt.lowercase||o.opt.lowercasetags,o.looseCase=o.opt.lowercase?"toLowerCase":"toUpperCase",o.opt.maxEntityCount=o.opt.maxEntityCount||512,o.opt.maxEntityDepth=o.opt.maxEntityDepth||4,o.entityCount=o.entityDepth=0,o.tags=[],o.closed=o.closedRoot=o.sawRoot=!1,o.tag=o.error=null,o.strict=!!t,o.noscript=!!(t||o.opt.noscript),o.state=p.BEGIN,o.strictEntities=o.opt.strictEntities,o.ENTITIES=o.strictEntities?Object.create(c.XML_ENTITIES):Object.create(c.ENTITIES),o.attribList=[],o.opt.xmlns&&(o.ns=Object.create(j)),o.opt.unquotedAttributeValues===void 0&&(o.opt.unquotedAttributeValues=!t),o.trackPosition=o.opt.position!==!1,o.trackPosition&&(o.position=o.line=o.column=0),Z(o,"onready")}Object.create||(Object.create=function(t){function e(){}e.prototype=t;var o=new e;return o}),Object.keys||(Object.keys=function(t){var e=[];for(var o in t)t.hasOwnProperty(o)&&e.push(o);return e});function v(t){for(var e=Math.max(c.MAX_BUFFER_LENGTH,10),o=0,n=0,g=h.length;n<g;n++){var B=t[h[n]].length;if(B>e)switch(h[n]){case"textNode":ye(t);break;case"cdata":Y(t,"oncdata",t.cdata),t.cdata="";break;case"script":Y(t,"onscript",t.script),t.script="";break;default:A(t,"Max buffer length exceeded: "+h[n])}o=Math.max(o,B)}var M=c.MAX_BUFFER_LENGTH-o;t.bufferCheckPosition=M+t.position}function S(t){for(var e=0,o=h.length;e<o;e++)t[h[e]]=""}function $(t){ye(t),t.cdata!==""&&(Y(t,"oncdata",t.cdata),t.cdata=""),t.script!==""&&(Y(t,"onscript",t.script),t.script="")}T.prototype={end:function(){K(this)},write:i,resume:function(){return this.error=null,this},close:function(){return this.write(null)},flush:function(){$(this)}};var N;try{N=Ye().Stream}catch{N=function(){}}N||(N=function(){});var R=c.EVENTS.filter(function(t){return t!=="error"&&t!=="end"});function _(t,e){return new P(t,e)}function d(t,e){if(t.length>=2){if(t[0]===255&&t[1]===254)return"utf-16le";if(t[0]===254&&t[1]===255)return"utf-16be"}return t.length>=3&&t[0]===239&&t[1]===187&&t[2]===191?"utf8":t.length>=4?t[0]===60&&t[1]===0&&t[2]===63&&t[3]===0?"utf-16le":t[0]===0&&t[1]===60&&t[2]===0&&t[3]===63?"utf-16be":"utf8":e?"utf8":null}function P(t,e){if(!(this instanceof P))return new P(t,e);N.apply(this),this._parser=new T(t,e),this.writable=!0,this.readable=!0;var o=this;this._parser.onend=function(){o.emit("end")},this._parser.onerror=function(n){o.emit("error",n),o._parser.error=null},this._decoder=null,this._decoderBuffer=null,R.forEach(function(n){Object.defineProperty(o,"on"+n,{get:function(){return o._parser["on"+n]},set:function(g){if(!g)return o.removeAllListeners(n),o._parser["on"+n]=g,g;o.on(n,g)},enumerable:!0,configurable:!1})})}P.prototype=Object.create(N.prototype,{constructor:{value:P}}),P.prototype._decodeBuffer=function(t,e){if(this._decoderBuffer&&(t=Buffer.concat([this._decoderBuffer,t]),this._decoderBuffer=null),!this._decoder){var o=d(t,e);if(!o)return this._decoderBuffer=t,"";this._parser.encoding=o,this._decoder=new TextDecoder(o)}return this._decoder.decode(t,{stream:!e})},P.prototype.write=function(t){if(typeof Buffer=="function"&&typeof Buffer.isBuffer=="function"&&Buffer.isBuffer(t))t=this._decodeBuffer(t,!1);else if(this._decoderBuffer){var e=this._decodeBuffer(Buffer.alloc(0),!0);e&&(this._parser.write(e),this.emit("data",e))}return this._parser.write(t.toString()),this.emit("data",t),!0},P.prototype.end=function(t){if(t&&t.length&&this.write(t),this._decoderBuffer){var e=this._decodeBuffer(Buffer.alloc(0),!0);e&&(this._parser.write(e),this.emit("data",e))}else if(this._decoder){var o=this._decoder.decode();o&&(this._parser.write(o),this.emit("data",o))}return this._parser.end(),!0},P.prototype.on=function(t,e){var o=this;return!o._parser["on"+t]&&R.indexOf(t)!==-1&&(o._parser["on"+t]=function(){var n=arguments.length===1?[arguments[0]]:Array.apply(null,arguments);n.splice(0,0,t),o.emit.apply(o,n)}),N.prototype.on.call(o,t,e)};var w=/^\[CDATA\[$/i,J=/^DOCTYPE$/i,x="http://www.w3.org/XML/1998/namespace",ae="http://www.w3.org/2000/xmlns/",j={xml:x,xmlns:ae},Q=/[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/,D=/[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/,he=/[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/,b=/[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/;function W(t){return t===" "||t===`
+`||t==="\r"||t==="	"}function ce(t){return t==='"'||t==="'"}function ve(t){return t===">"||W(t)}function re(t,e){return t.test(e)}function a(t,e){return!re(t,e)}var p=0;c.STATE={BEGIN:p++,BEGIN_WHITESPACE:p++,TEXT:p++,TEXT_ENTITY:p++,OPEN_WAKA:p++,SGML_DECL:p++,SGML_DECL_QUOTED:p++,DOCTYPE:p++,DOCTYPE_QUOTED:p++,DOCTYPE_DTD:p++,DOCTYPE_DTD_QUOTED:p++,COMMENT_STARTING:p++,COMMENT:p++,COMMENT_ENDING:p++,COMMENT_ENDED:p++,CDATA:p++,CDATA_ENDING:p++,CDATA_ENDING_2:p++,PROC_INST:p++,PROC_INST_BODY:p++,PROC_INST_ENDING:p++,OPEN_TAG:p++,OPEN_TAG_SLASH:p++,ATTRIB:p++,ATTRIB_NAME:p++,ATTRIB_NAME_SAW_WHITE:p++,ATTRIB_VALUE:p++,ATTRIB_VALUE_QUOTED:p++,ATTRIB_VALUE_CLOSED:p++,ATTRIB_VALUE_UNQUOTED:p++,ATTRIB_VALUE_ENTITY_Q:p++,ATTRIB_VALUE_ENTITY_U:p++,CLOSE_TAG:p++,CLOSE_TAG_SAW_WHITE:p++,SCRIPT:p++,SCRIPT_ENDING:p++},c.XML_ENTITIES=Object.assign(Object.create(null),{amp:"&",gt:">",lt:"<",quot:'"',apos:"'"}),c.ENTITIES=Object.assign(Object.create(null),{amp:"&",gt:">",lt:"<",quot:'"',apos:"'",AElig:198,Aacute:193,Acirc:194,Agrave:192,Aring:197,Atilde:195,Auml:196,Ccedil:199,ETH:208,Eacute:201,Ecirc:202,Egrave:200,Euml:203,Iacute:205,Icirc:206,Igrave:204,Iuml:207,Ntilde:209,Oacute:211,Ocirc:212,Ograve:210,Oslash:216,Otilde:213,Ouml:214,THORN:222,Uacute:218,Ucirc:219,Ugrave:217,Uuml:220,Yacute:221,aacute:225,acirc:226,aelig:230,agrave:224,aring:229,atilde:227,auml:228,ccedil:231,eacute:233,ecirc:234,egrave:232,eth:240,euml:235,iacute:237,icirc:238,igrave:236,iuml:239,ntilde:241,oacute:243,ocirc:244,ograve:242,oslash:248,otilde:245,ouml:246,szlig:223,thorn:254,uacute:250,ucirc:251,ugrave:249,uuml:252,yacute:253,yuml:255,copy:169,reg:174,nbsp:160,iexcl:161,cent:162,pound:163,curren:164,yen:165,brvbar:166,sect:167,uml:168,ordf:170,laquo:171,not:172,shy:173,macr:175,deg:176,plusmn:177,sup1:185,sup2:178,sup3:179,acute:180,micro:181,para:182,middot:183,cedil:184,ordm:186,raquo:187,frac14:188,frac12:189,frac34:190,iquest:191,times:215,divide:247,OElig:338,oelig:339,Scaron:352,scaron:353,Yuml:376,fnof:402,circ:710,tilde:732,Alpha:913,Beta:914,Gamma:915,Delta:916,Epsilon:917,Zeta:918,Eta:919,Theta:920,Iota:921,Kappa:922,Lambda:923,Mu:924,Nu:925,Xi:926,Omicron:927,Pi:928,Rho:929,Sigma:931,Tau:932,Upsilon:933,Phi:934,Chi:935,Psi:936,Omega:937,alpha:945,beta:946,gamma:947,delta:948,epsilon:949,zeta:950,eta:951,theta:952,iota:953,kappa:954,lambda:955,mu:956,nu:957,xi:958,omicron:959,pi:960,rho:961,sigmaf:962,sigma:963,tau:964,upsilon:965,phi:966,chi:967,psi:968,omega:969,thetasym:977,upsih:978,piv:982,ensp:8194,emsp:8195,thinsp:8201,zwnj:8204,zwj:8205,lrm:8206,rlm:8207,ndash:8211,mdash:8212,lsquo:8216,rsquo:8217,sbquo:8218,ldquo:8220,rdquo:8221,bdquo:8222,dagger:8224,Dagger:8225,bull:8226,hellip:8230,permil:8240,prime:8242,Prime:8243,lsaquo:8249,rsaquo:8250,oline:8254,frasl:8260,euro:8364,image:8465,weierp:8472,real:8476,trade:8482,alefsym:8501,larr:8592,uarr:8593,rarr:8594,darr:8595,harr:8596,crarr:8629,lArr:8656,uArr:8657,rArr:8658,dArr:8659,hArr:8660,forall:8704,part:8706,exist:8707,empty:8709,nabla:8711,isin:8712,notin:8713,ni:8715,prod:8719,sum:8721,minus:8722,lowast:8727,radic:8730,prop:8733,infin:8734,ang:8736,and:8743,or:8744,cap:8745,cup:8746,int:8747,there4:8756,sim:8764,cong:8773,asymp:8776,ne:8800,equiv:8801,le:8804,ge:8805,sub:8834,sup:8835,nsub:8836,sube:8838,supe:8839,oplus:8853,otimes:8855,perp:8869,sdot:8901,lceil:8968,rceil:8969,lfloor:8970,rfloor:8971,lang:9001,rang:9002,loz:9674,spades:9824,clubs:9827,hearts:9829,diams:9830}),Object.keys(c.ENTITIES).forEach(function(t){var e=c.ENTITIES[t],o=typeof e=="number"?String.fromCharCode(e):e;c.ENTITIES[t]=o});for(var ne in c.STATE)c.STATE[c.STATE[ne]]=ne;p=c.STATE;function Z(t,e,o){t[e]&&t[e](o)}function V(t){var e=t&&t.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);return e?e[2]:null}function H(t){return t?t.toLowerCase().replace(/[^a-z0-9]/g,""):null}function ee(t,e){let o=H(t),n=H(e);return!o||!n?!0:n==="utf16"?o==="utf16le"||o==="utf16be":o===n}function se(t,e){if(!(!t.strict||!t.encoding||!e||e.name!=="xml")){var o=V(e.body);o&&!ee(t.encoding,o)&&X(t,"XML declaration encoding "+o+" does not match detected stream encoding "+t.encoding.toUpperCase())}}function Y(t,e,o){t.textNode&&ye(t),Z(t,e,o)}function ye(t){t.textNode=O(t.opt,t.textNode),t.textNode&&Z(t,"ontext",t.textNode),t.textNode=""}function O(t,e){return t.trim&&(e=e.trim()),t.normalize&&(e=e.replace(/\s+/g," ")),e}function A(t,e){return ye(t),t.trackPosition&&(e+=`
+Line: `+t.line+`
+Column: `+t.column+`
+Char: `+t.c),e=new Error(e),t.error=e,Z(t,"onerror",e),t}function K(t){return t.sawRoot&&!t.closedRoot&&X(t,"Unclosed root tag"),t.state!==p.BEGIN&&t.state!==p.BEGIN_WHITESPACE&&t.state!==p.TEXT&&A(t,"Unexpected end"),ye(t),t.c="",t.closed=!0,Z(t,"onend"),T.call(t,t.strict,t.opt),t}function X(t,e){if(typeof t!="object"||!(t instanceof T))throw new Error("bad call to strictFail");t.strict&&A(t,e)}function Ve(t){t.strict||(t.tagName=t.tagName[t.looseCase]());var e=t.tags[t.tags.length-1]||t,o=t.tag={name:t.tagName,attributes:{}};t.opt.xmlns&&(o.ns=e.ns),t.attribList.length=0,Y(t,"onopentagstart",o)}function De(t,e){var o=t.indexOf(":"),n=o<0?["",t]:t.split(":"),g=n[0],B=n[1];return e&&t==="xmlns"&&(g="xmlns",B=""),{prefix:g,local:B}}function Ce(t){if(t.strict||(t.attribName=t.attribName[t.looseCase]()),t.attribList.indexOf(t.attribName)!==-1||t.tag.attributes.hasOwnProperty(t.attribName)){t.attribName=t.attribValue="";return}if(t.opt.xmlns){var e=De(t.attribName,!0),o=e.prefix,n=e.local;if(o==="xmlns")if(n==="xml"&&t.attribValue!==x)X(t,"xml: prefix must be bound to "+x+`
+Actual: `+t.attribValue);else if(n==="xmlns"&&t.attribValue!==ae)X(t,"xmlns: prefix must be bound to "+ae+`
+Actual: `+t.attribValue);else{var g=t.tag,B=t.tags[t.tags.length-1]||t;g.ns===B.ns&&(g.ns=Object.create(B.ns)),g.ns[n]=t.attribValue}t.attribList.push([t.attribName,t.attribValue])}else t.tag.attributes[t.attribName]=t.attribValue,Y(t,"onattribute",{name:t.attribName,value:t.attribValue});t.attribName=t.attribValue=""}function be(t,e){if(t.opt.xmlns){var o=t.tag,n=De(t.tagName);o.prefix=n.prefix,o.local=n.local,o.uri=o.ns[n.prefix]||"",o.prefix&&!o.uri&&(X(t,"Unbound namespace prefix: "+JSON.stringify(t.tagName)),o.uri=n.prefix);var g=t.tags[t.tags.length-1]||t;o.ns&&g.ns!==o.ns&&Object.keys(o.ns).forEach(function(qe){Y(t,"onopennamespace",{prefix:qe,uri:o.ns[qe]})});for(var B=0,M=t.attribList.length;B<M;B++){var oe=t.attribList[B],ie=oe[0],le=oe[1],te=De(ie,!0),ge=te.prefix,Be=te.local,Ue=ge===""?"":o.ns[ge]||"",Pe={name:ie,value:le,prefix:ge,local:Be,uri:Ue};ge&&ge!=="xmlns"&&!Ue&&(X(t,"Unbound namespace prefix: "+JSON.stringify(ge)),Pe.uri=ge),t.tag.attributes[ie]=Pe,Y(t,"onattribute",Pe)}t.attribList.length=0}t.tag.isSelfClosing=!!e,t.sawRoot=!0,t.tags.push(t.tag),Y(t,"onopentag",t.tag),e||(!t.noscript&&t.tagName.toLowerCase()==="script"?t.state=p.SCRIPT:t.state=p.TEXT,t.tag=null,t.tagName=""),t.attribName=t.attribValue="",t.attribList.length=0}function Te(t){if(!t.tagName){X(t,"Weird empty close tag."),t.textNode+="</>",t.state=p.TEXT;return}if(t.script){if(t.tagName!=="script"){t.script+="</"+t.tagName+">",t.tagName="",t.state=p.SCRIPT;return}Y(t,"onscript",t.script),t.script=""}var e=t.tags.length,o=t.tagName;t.strict||(o=o[t.looseCase]());for(var n=o;e--;){var g=t.tags[e];if(g.name!==n)X(t,"Unexpected close tag");else break}if(e<0){X(t,"Unmatched closing tag: "+t.tagName),t.textNode+="</"+t.tagName+">",t.state=p.TEXT;return}t.tagName=o;for(var B=t.tags.length;B-- >e;){var M=t.tag=t.tags.pop();t.tagName=t.tag.name,Y(t,"onclosetag",t.tagName);var oe={};for(var ie in M.ns)oe[ie]=M.ns[ie];var le=t.tags[t.tags.length-1]||t;t.opt.xmlns&&M.ns!==le.ns&&Object.keys(M.ns).forEach(function(te){var ge=M.ns[te];Y(t,"onclosenamespace",{prefix:te,uri:ge})})}e===0&&(t.closedRoot=!0),t.tagName=t.attribValue=t.attribName="",t.attribList.length=0,t.state=p.TEXT}function Fe(t){var e=t.entity,o=e.toLowerCase(),n,g="";return t.ENTITIES[e]?t.ENTITIES[e]:t.ENTITIES[o]?t.ENTITIES[o]:(e=o,e.charAt(0)==="#"&&(e.charAt(1)==="x"?(e=e.slice(2),n=parseInt(e,16),g=n.toString(16)):(e=e.slice(1),n=parseInt(e,10),g=n.toString(10))),e=e.replace(/^0+/,""),isNaN(n)||g.toLowerCase()!==e||n<0||n>1114111||!Re(n)?(X(t,"Invalid character entity"),"&"+t.entity+";"):String.fromCodePoint(n))}function Re(t){return t===9||t===10||t===13||t>=32&&t<=55295||t>=57344&&t<=65533||t>=65536&&t<=1114111}function fe(t,e){e==="<"?(t.state=p.OPEN_WAKA,t.startTagPosition=t.position):W(e)||(X(t,"Non-whitespace before first tag."),t.textNode=e,t.state=p.TEXT)}function Oe(t,e){var o="";return e<t.length&&(o=t.charAt(e)),o}function i(t){var e=this;if(this.error)throw this.error;if(e.closed)return A(e,"Cannot write after close. Assign an onready handler.");if(t===null)return K(e);typeof t=="object"&&(t=t.toString());for(var o=0,n="";n=Oe(t,o++),e.c=n,!!n;)switch(e.trackPosition&&(e.position++,n===`
+`?(e.line++,e.column=0):e.column++),e.state){case p.BEGIN:if(e.state=p.BEGIN_WHITESPACE,n==="\uFEFF")continue;fe(e,n);continue;case p.BEGIN_WHITESPACE:fe(e,n);continue;case p.TEXT:if(e.sawRoot&&!e.closedRoot){for(var B=o-1;n&&n!=="<"&&n!=="&";)n=Oe(t,o++),n&&e.trackPosition&&(e.position++,n===`
+`?(e.line++,e.column=0):e.column++);e.textNode+=t.substring(B,o-1)}n==="<"&&!(e.sawRoot&&e.closedRoot&&!e.strict)?(e.state=p.OPEN_WAKA,e.startTagPosition=e.position):(!W(n)&&(!e.sawRoot||e.closedRoot)&&X(e,"Text data outside of root node."),n==="&"?e.state=p.TEXT_ENTITY:e.textNode+=n);continue;case p.SCRIPT:n==="<"?e.state=p.SCRIPT_ENDING:e.script+=n;continue;case p.SCRIPT_ENDING:n==="/"?e.state=p.CLOSE_TAG:(e.script+="<"+n,e.state=p.SCRIPT);continue;case p.OPEN_WAKA:if(n==="!")e.state=p.SGML_DECL,e.sgmlDecl="";else if(!W(n))if(re(Q,n))e.state=p.OPEN_TAG,e.tagName=n;else if(n==="/")e.state=p.CLOSE_TAG,e.tagName="";else if(n==="?")e.state=p.PROC_INST,e.procInstName=e.procInstBody="";else{if(X(e,"Unencoded <"),e.startTagPosition+1<e.position){var g=e.position-e.startTagPosition;n=new Array(g).join(" ")+n}e.textNode+="<"+n,e.state=p.TEXT}continue;case p.SGML_DECL:if(e.sgmlDecl+n==="--"){e.state=p.COMMENT,e.comment="",e.sgmlDecl="";continue}e.doctype&&e.doctype!==!0&&e.sgmlDecl?(e.state=p.DOCTYPE_DTD,e.doctype+="<!"+e.sgmlDecl+n,e.sgmlDecl=""):w.test(e.sgmlDecl+n)?(Y(e,"onopencdata"),e.state=p.CDATA,e.sgmlDecl="",e.cdata=""):J.test(e.sgmlDecl+n)?(e.state=p.DOCTYPE,(e.doctype||e.sawRoot)&&X(e,"Inappropriately located doctype declaration"),e.doctype="",e.sgmlDecl=""):n===">"?(Y(e,"onsgmldeclaration",e.sgmlDecl),e.sgmlDecl="",e.state=p.TEXT):(ce(n)&&(e.state=p.SGML_DECL_QUOTED),e.sgmlDecl+=n);continue;case p.SGML_DECL_QUOTED:n===e.q&&(e.state=p.SGML_DECL,e.q=""),e.sgmlDecl+=n;continue;case p.DOCTYPE:n===">"?(e.state=p.TEXT,Y(e,"ondoctype",e.doctype),e.doctype=!0):(e.doctype+=n,n==="["?e.state=p.DOCTYPE_DTD:ce(n)&&(e.state=p.DOCTYPE_QUOTED,e.q=n));continue;case p.DOCTYPE_QUOTED:e.doctype+=n,n===e.q&&(e.q="",e.state=p.DOCTYPE);continue;case p.DOCTYPE_DTD:n==="]"?(e.doctype+=n,e.state=p.DOCTYPE):n==="<"?(e.state=p.OPEN_WAKA,e.startTagPosition=e.position):ce(n)?(e.doctype+=n,e.state=p.DOCTYPE_DTD_QUOTED,e.q=n):e.doctype+=n;continue;case p.DOCTYPE_DTD_QUOTED:e.doctype+=n,n===e.q&&(e.state=p.DOCTYPE_DTD,e.q="");continue;case p.COMMENT:n==="-"?e.state=p.COMMENT_ENDING:e.comment+=n;continue;case p.COMMENT_ENDING:n==="-"?(e.state=p.COMMENT_ENDED,e.comment=O(e.opt,e.comment),e.comment&&Y(e,"oncomment",e.comment),e.comment=""):(e.comment+="-"+n,e.state=p.COMMENT);continue;case p.COMMENT_ENDED:n!==">"?(X(e,"Malformed comment"),e.comment+="--"+n,e.state=p.COMMENT):e.doctype&&e.doctype!==!0?e.state=p.DOCTYPE_DTD:e.state=p.TEXT;continue;case p.CDATA:for(var B=o-1;n&&n!=="]";)n=Oe(t,o++),n&&e.trackPosition&&(e.position++,n===`
+`?(e.line++,e.column=0):e.column++);e.cdata+=t.substring(B,o-1),n==="]"&&(e.state=p.CDATA_ENDING);continue;case p.CDATA_ENDING:n==="]"?e.state=p.CDATA_ENDING_2:(e.cdata+="]"+n,e.state=p.CDATA);continue;case p.CDATA_ENDING_2:n===">"?(e.cdata&&Y(e,"oncdata",e.cdata),Y(e,"onclosecdata"),e.cdata="",e.state=p.TEXT):n==="]"?e.cdata+="]":(e.cdata+="]]"+n,e.state=p.CDATA);continue;case p.PROC_INST:n==="?"?e.state=p.PROC_INST_ENDING:W(n)?e.state=p.PROC_INST_BODY:e.procInstName+=n;continue;case p.PROC_INST_BODY:if(!e.procInstBody&&W(n))continue;n==="?"?e.state=p.PROC_INST_ENDING:e.procInstBody+=n;continue;case p.PROC_INST_ENDING:if(n===">"){let le={name:e.procInstName,body:e.procInstBody};se(e,le),Y(e,"onprocessinginstruction",le),e.procInstName=e.procInstBody="",e.state=p.TEXT}else e.procInstBody+="?"+n,e.state=p.PROC_INST_BODY;continue;case p.OPEN_TAG:re(D,n)?e.tagName+=n:(Ve(e),n===">"?be(e):n==="/"?e.state=p.OPEN_TAG_SLASH:(W(n)||X(e,"Invalid character in tag name"),e.state=p.ATTRIB));continue;case p.OPEN_TAG_SLASH:n===">"?(be(e,!0),Te(e)):(X(e,"Forward-slash in opening tag not followed by >"),e.state=p.ATTRIB);continue;case p.ATTRIB:if(W(n))continue;n===">"?be(e):n==="/"?e.state=p.OPEN_TAG_SLASH:re(Q,n)?(e.attribName=n,e.attribValue="",e.state=p.ATTRIB_NAME):X(e,"Invalid attribute name");continue;case p.ATTRIB_NAME:n==="="?e.state=p.ATTRIB_VALUE:n===">"?(X(e,"Attribute without value"),e.attribValue=e.attribName,Ce(e),be(e)):W(n)?e.state=p.ATTRIB_NAME_SAW_WHITE:re(D,n)?e.attribName+=n:X(e,"Invalid attribute name");continue;case p.ATTRIB_NAME_SAW_WHITE:if(n==="=")e.state=p.ATTRIB_VALUE;else{if(W(n))continue;X(e,"Attribute without value"),e.tag.attributes[e.attribName]="",e.attribValue="",Y(e,"onattribute",{name:e.attribName,value:""}),e.attribName="",n===">"?be(e):re(Q,n)?(e.attribName=n,e.state=p.ATTRIB_NAME):(X(e,"Invalid attribute name"),e.state=p.ATTRIB)}continue;case p.ATTRIB_VALUE:if(W(n))continue;ce(n)?(e.q=n,e.state=p.ATTRIB_VALUE_QUOTED):(e.opt.unquotedAttributeValues||A(e,"Unquoted attribute value"),e.state=p.ATTRIB_VALUE_UNQUOTED,e.attribValue=n);continue;case p.ATTRIB_VALUE_QUOTED:if(n!==e.q){n==="&"?e.state=p.ATTRIB_VALUE_ENTITY_Q:e.attribValue+=n;continue}Ce(e),e.q="",e.state=p.ATTRIB_VALUE_CLOSED;continue;case p.ATTRIB_VALUE_CLOSED:W(n)?e.state=p.ATTRIB:n===">"?be(e):n==="/"?e.state=p.OPEN_TAG_SLASH:re(Q,n)?(X(e,"No whitespace between attributes"),e.attribName=n,e.attribValue="",e.state=p.ATTRIB_NAME):X(e,"Invalid attribute name");continue;case p.ATTRIB_VALUE_UNQUOTED:if(!ve(n)){n==="&"?e.state=p.ATTRIB_VALUE_ENTITY_U:e.attribValue+=n;continue}Ce(e),n===">"?be(e):e.state=p.ATTRIB;continue;case p.CLOSE_TAG:if(e.tagName)n===">"?Te(e):re(D,n)?e.tagName+=n:e.script?(e.script+="</"+e.tagName+n,e.tagName="",e.state=p.SCRIPT):(W(n)||X(e,"Invalid tagname in closing tag"),e.state=p.CLOSE_TAG_SAW_WHITE);else{if(W(n))continue;a(Q,n)?e.script?(e.script+="</"+n,e.state=p.SCRIPT):X(e,"Invalid tagname in closing tag."):e.tagName=n}continue;case p.CLOSE_TAG_SAW_WHITE:if(W(n))continue;n===">"?Te(e):X(e,"Invalid characters in closing tag");continue;case p.TEXT_ENTITY:case p.ATTRIB_VALUE_ENTITY_Q:case p.ATTRIB_VALUE_ENTITY_U:var M,oe;switch(e.state){case p.TEXT_ENTITY:M=p.TEXT,oe="textNode";break;case p.ATTRIB_VALUE_ENTITY_Q:M=p.ATTRIB_VALUE_QUOTED,oe="attribValue";break;case p.ATTRIB_VALUE_ENTITY_U:M=p.ATTRIB_VALUE_UNQUOTED,oe="attribValue";break}if(n===";"){var ie=Fe(e);e.opt.unparsedEntities&&!Object.values(c.XML_ENTITIES).includes(ie)?((e.entityCount+=1)>e.opt.maxEntityCount&&A(e,"Parsed entity count exceeds max entity count"),(e.entityDepth+=1)>e.opt.maxEntityDepth&&A(e,"Parsed entity depth exceeds max entity depth"),e.entity="",e.state=M,e.write(ie),e.entityDepth-=1):(e[oe]+=ie,e.entity="",e.state=M)}else re(e.entity.length?b:he,n)?e.entity+=n:(X(e,"Invalid character in entity name"),e[oe]+="&"+e.entity+n,e.entity="",e.state=M);continue;default:throw new Error(e,"Unknown state: "+e.state)}return e.position>=e.bufferCheckPosition&&v(e),e}String.fromCodePoint||(function(){var t=String.fromCharCode,e=Math.floor,o=function(){var n=16384,g=[],B,M,oe=-1,ie=arguments.length;if(!ie)return"";for(var le="";++oe<ie;){var te=Number(arguments[oe]);if(!isFinite(te)||te<0||te>1114111||e(te)!==te)throw RangeError("Invalid code point: "+te);te<=65535?g.push(te):(te-=65536,B=(te>>10)+55296,M=te%1024+56320,g.push(B,M)),(oe+1===ie||g.length>n)&&(le+=t.apply(null,g),g.length=0)}return le};Object.defineProperty?Object.defineProperty(String,"fromCodePoint",{value:o,configurable:!0,writable:!0}):String.fromCodePoint=o})()})(typeof je>"u"?je.sax={}:je)});var et=Se((Xt,Ze)=>{var Je=ze(),Ee={Core:{Namespace:"Org.OData.Core.V1",Uri:"https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.json"},Capabilities:{Namespace:"Org.OData.Capabilities.V1",Uri:"https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.json"},Validation:{Namespace:"Org.OData.Validation.V1",Uri:"https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Validation.V1.json"}};Ze.exports.xml2json=function(c,{lineNumbers:h=!1,annotations:T=!1,strict:v=!1,messages:S=[]}={}){let $={},N={Edm:"Edm",odata:"odata"},R={},_={},d={association:{},associationSets:[],referentialConstraints:[],entitySet:{},current:{association:null,associationSet:null,namespace:null},needs:{},nonFilterable:{},filterRestrictions:{},requiredInFilter:{},nonSortable:{}},P=Je.parser(!0,{xmlns:!0,strictEntities:!0});P.onerror=function(i){throw i},P.onopentag=function(i){if(W(i,this)){switch(i.local){case"Edmx":O(i,"Version"),$.$Version=i.attributes.Version.value;break;case"DataServices":{let t=Object.values(i.attributes).find(e=>e.local=="DataServiceVersion");t&&($.$Version=t.value);break}case"Reference":O(i,"Uri"),_.$current=i.attributes.Uri.value;break;case"Include":O(i,"Namespace"),_[i.attributes.Namespace.value]=_.$current,i.attributes.Alias&&(_[i.attributes.Alias.value]=_.$current);case"Schema":O(i,"Namespace"),i.attributes.Alias?(N[i.attributes.Namespace.value]=i.attributes.Alias.value,N[i.attributes.Alias.value]=i.attributes.Alias.value,R[i.attributes.Alias.value]=i.attributes.Namespace.value):N[i.attributes.Namespace.value]=i.attributes.Namespace.value,R[i.attributes.Namespace.value]=i.attributes.Namespace.value,d.current.namespace=i.attributes.Namespace.value;break;case"Association":{O(i,"Name");let t=d.current.namespace+"."+i.attributes.Name.value;d.current.association=d.association[t]||{},d.association[t]=d.current.association;break}case"NavigationProperty":if(O(i,"Name"),$.$Version<"4.0"){O(i,"Relationship"),O(i,"FromRole");let t=Y(i.attributes.Relationship.value),e=R[t.qualifier]+"."+t.name,o=d.association[e]||{},n=o[i.attributes.FromRole.value]||{};n.$Partner=i.attributes.Name.value,o[i.attributes.FromRole.value]=n,d.association[e]=o}break;case"AssociationSet":O(i,"Association"),d.current.associationSet={associationName:i.attributes.Association.value,ends:[]},d.associationSets.push(d.current.associationSet);break;case"End":O(i,"Role"),d.current.association?(O(i,"Type"),d.current.associationEnd=d.current.association[i.attributes.Role.value]||{},d.current.associationEnd.type=se(i.attributes.Type.value),O(i,"Multiplicity"),d.current.associationEnd.multiplicity=i.attributes.Multiplicity.value,d.current.association[i.attributes.Role.value]=d.current.associationEnd):d.current.associationSet&&(O(i,"EntitySet"),d.current.associationSet.ends.push({set:i.attributes.EntitySet.value,role:i.attributes.Role.value}));break;case"OnDelete":O(i,"Action"),$.$Version<"4.0"&&(d.current.associationEnd.onDelete=i.attributes.Action.value);break;case"ReferentialConstraint":$.$Version<"4.0"&&(d.current.referentialConstraint={association:d.current.association,principalProperties:[],dependentProperties:[]},d.referentialConstraints.push(d.current.referentialConstraint));break;case"Principal":d.current.referentialConstraint.properties=d.current.referentialConstraint.principalProperties;break;case"Dependent":d.current.referentialConstraint.properties=d.current.referentialConstraint.dependentProperties,d.current.referentialConstraint.dependentRole=i.attributes.Role.value;break;case"PropertyRef":d.current.referentialConstraint&&d.current.referentialConstraint.properties.push(i.attributes.Name.value);break;case"Documentation":d.needs.Core=!0;break}ve(i,this)}},P.onclosetag=function(i){let t=i.includes(":")?i.split(":")[1]:i;if(re(t,this))switch(t){case"Schema":d.current.namespace=null;break;case"Association":d.current.association=null;break;case"AssociationSet":d.current.associationSet=null;break;case"End":d.current.associationEnd=null;break;case"ReferentialConstraint":d.current.referentialConstraint=null;break;case"Principal":case"Dependent":delete d.current.referentialConstraint.properties;break}};let w={isExpression:!0,expression:{min:2,max:2},Annotation:{min:0}},J={isExpression:!0,expression:{min:1,max:1},Annotation:{min:0}},x={"":{Edmx:{}},Edmx:{x:!0,Reference:{min:0},DataServices:{min:1,max:1}},Reference:{x:!0,v2x:!0,Annotation:{min:0},Include:{min:0},IncludeAnnotations:{min:0}},Include:{x:!0,v2x:!0,Annotation:{min:0}},IncludeAnnotations:{x:!0},DataServices:{x:!0,Schema:{min:1}},Schema:{Annotations:{min:0},EntityType:{min:0},ComplexType:{min:0},EnumType:{min:0},TypeDefinition:{min:0},Function:{min:0},Action:{min:0},EntityContainer:{min:0},Term:{min:0},Annotation:{min:0},Association:{min:0}},Annotations:{v2x:!0,Annotation:{min:0},ValueAnnotation:{min:0}},EntityType:{Key:{min:0,max:1},Property:{min:0},NavigationProperty:{min:0},Annotation:{min:0}},Key:{PropertyRef:{min:1}},PropertyRef:{},Property:{Annotation:{min:0},Documentation:{min:0}},NavigationProperty:{OnDelete:{min:0,max:1},ReferentialConstraint:{min:0},Annotation:{min:0},Documentation:{min:0}},OnDelete:{Annotation:{min:0}},ReferentialConstraint:{Annotation:{min:0},Principal:{min:0},Dependent:{min:0}},ComplexType:{Property:{min:0},NavigationProperty:{min:0},Annotation:{min:0}},EnumType:{Member:{min:1},Annotation:{min:0}},Member:{Annotation:{min:0}},TypeDefinition:{Annotation:{min:0}},Action:{Parameter:{min:0},ReturnType:{min:0},Annotation:{min:0}},Function:{Parameter:{min:0},ReturnType:{min:1},Annotation:{min:0}},Parameter:{Annotation:{min:0},Documentation:{min:0}},ReturnType:{Annotation:{min:0}},EntityContainer:{EntitySet:{min:0},Singleton:{min:0},ActionImport:{min:0},FunctionImport:{min:0},Annotation:{min:0},AssociationSet:{min:0}},EntitySet:{NavigationPropertyBinding:{min:0},Annotation:{min:0},Documentation:{min:0}},Singleton:{NavigationPropertyBinding:{min:0},Annotation:{min:0}},NavigationPropertyBinding:{},ActionImport:{Annotation:{min:0}},FunctionImport:{Annotation:{min:0},Documentation:{min:0},Parameter:{min:0}},Term:{Annotation:{min:0}},Annotation:{v2x:!0,expression:{min:0},Annotation:{min:0}},Binary:{isExpression:!0},Bool:{isExpression:!0},Date:{isExpression:!0},DateTimeOffset:{isExpression:!0},Decimal:{isExpression:!0},Duration:{isExpression:!0},EnumMember:{isExpression:!0},Float:{isExpression:!0},Guid:{isExpression:!0},Int:{isExpression:!0},String:{isExpression:!0},TimeOfDay:{isExpression:!0},AnnotationPath:{isExpression:!0},ModelElementPath:{isExpression:!0},NavigationPropertyPath:{isExpression:!0},PropertyPath:{isExpression:!0},Path:{isExpression:!0},And:w,Or:w,Not:J,Eq:w,Ne:w,Gt:w,Ge:w,Lt:w,Le:w,Has:w,In:w,Neg:J,Add:w,Sub:w,Mul:w,Div:w,DivBy:w,Mod:w,Apply:{isExpression:!0,expression:{min:0},Annotation:{min:0}},Cast:{isExpression:!0,expression:{min:1,max:1},Annotation:{min:0}},Collection:{isExpression:!0,expression:{min:0},Annotation:{min:0}},If:{isExpression:!0,expression:{min:2,max:3},Annotation:{min:0}},IsOf:{isExpression:!0,expression:{min:1,max:1},Annotation:{min:0}},LabeledElement:{isExpression:!0,expression:{min:0,max:1},Annotation:{min:0}},LabeledElementReference:{isExpression:!0},Null:{isExpression:!0,Annotation:{min:0}},Record:{isExpression:!0,PropertyValue:{min:0},Annotation:{min:0}},PropertyValue:{v2x:!0,expression:{min:0},Annotation:{min:0}},UrlRef:{isExpression:!0,expression:{min:0,max:1},Annotation:{min:0}},Association:{End:{min:2,max:2},ReferentialConstraint:{min:0,max:1}},AssociationSet:{End:{min:2,max:2}},End:{OnDelete:{min:0,max:1}},Principal:{PropertyRef:{min:1}},Dependent:{PropertyRef:{min:1}},Documentation:{Summary:{min:0,max:1},LongDescription:{min:0,max:1}}},ae="http://docs.oasis-open.org/odata/ns/edmx",j="http://docs.oasis-open.org/odata/ns/edm",Q="http://schemas.microsoft.com/ado/2007/06/edmx",D=["http://schemas.microsoft.com/ado/2006/04/edm","http://schemas.microsoft.com/ado/2007/05/edm","http://schemas.microsoft.com/ado/2008/01/edm","http://schemas.microsoft.com/ado/2008/09/edm","http://schemas.microsoft.com/ado/2009/11/edm"],he=[ae,j,Q,...D],b=[{local:""}];function W(i,t){let e=b[0];if(b.unshift({local:i.local}),$.$Version<"4.0"&&!he.includes(i.uri))return b[0].skip=!0,!1;let n=(x[i.local]||{}).isExpression?"expression":i.local,g=x[e.local];if(!g||!g[n]){if(t&&e.local==="")throw new Error(`Unexpected root element: ${i.local}`);return t&&K(`Element ${e.local}, unexpected child: ${i.local}`,t),b[0].skip=!0,!1}return e[n]?e[n].occ+=1:e[n]={occ:1},e[n].occ>g[n].max?(t&&K(`Element ${n}: ${e[n].occ} occurrences instead of at most ${g[n].max}`,t),b[0].skip=!0,!1):!0}function ce(){return b[0].skip}function ve(i,t){let e=x[i.local]||{};return e.x&&(($.$Version>="4.0"||e.v2x)&&i.uri===ae||$.$Version<"4.0"&&i.uri===Q)||!e.x&&(($.$Version>="4.0"||e.v2x||e.isExpression)&&i.uri===j||$.$Version<"4.0"&&D.includes(i.uri))?!0:(K(`Element ${i.local}: invalid or missing XML namespace: ${i.uri}`,t),!1)}function re(i,t){let e=b.shift();if(e.skip)return!1;if(!t)return!0;let o=Object.entries(x[e.local]||{}).filter(([,n])=>n.min&&n.min>0);for(let[n,g]of o)(!e[n]||e[n].occ<g.min)&&K(`Element ${i}, child element ${n}: ${e[n]?e[n].occ:0} occurrences instead of at least ${g.min}`,t);return!0}try{P.write(c).close()}catch(i){throw Xe(i,c,P)}if(d.associationSets.forEach(i=>{let t=Y(i.associationName),e=d.association[R[t.qualifier]+"."+t.name];i.ends.forEach((o,n)=>{let g=i.ends[1-n];d.entitySet[o.set]||(d.entitySet[o.set]=[]),e[o.role].$Partner&&d.entitySet[o.set].push({path:e[o.role].$Partner,type:e[o.role].type,target:g.set})})}),d.referentialConstraints.forEach(i=>{let t={};i.association[i.dependentRole].constraint=t,i.dependentProperties.forEach((e,o)=>{t[e]=i.principalProperties[o]})}),$.$Version<"4.0")for(let[i,t]of Object.entries(Ee))N[t.Namespace]||(N[t.Namespace]=i,N[i]=i);let a={annotatable:[],annotation:[],container:{}},p={target:null},ne=Je.parser(!0,{xmlns:!0,strictEntities:!0});ne.onopentag=function(i){if(!W(i))return;let t=["Binary","Bool","Date","DateTimeOffset","Decimal","Duration","EnumMember","Float","Guid","Int","String","TimeOfDay","AnnotationPath","ModelElementPath","NavigationPropertyPath","PropertyPath","Path","UrlRef"],e={target:null,prefix:""},o={};switch(i.local){case"Edmx":A(null,i,[],["Version"]);break;case"Reference":{A(null,i,[],["Uri"]),a.reference={};let n=i.attributes.Uri.value;(n.startsWith("https://oasis-tcs.github.io/odata-vocabularies/vocabularies/")||n.startsWith("https://sap.github.io/odata-vocabularies/vocabularies/"))&&n.endsWith(".xml")&&(n=n.substring(0,n.length-3)+"json"),$.$Reference||($.$Reference={}),$.$Reference[n]=a.reference,e.target=a.reference;break}case"Include":a.include={},A(a.include,i,["Namespace","Alias"]),a.reference.$Include||(a.reference.$Include=[]),a.reference.$Include.push(a.include),e.target=a.include;break;case"IncludeAnnotations":O(i,"TermNamespace"),a.includeAnnotations={},A(a.includeAnnotations,i,["TargetNamespace","TermNamespace","Qualifier"]),a.reference.$IncludeAnnotations||(a.reference.$IncludeAnnotations=[]),a.reference.$IncludeAnnotations.push(a.includeAnnotations),e.target=a.includeAnnotations;break;case"Schema":a.schema={},a.schemaName=i.attributes.Namespace.value,A(a.schema,i,["Alias"],["Namespace"]),Te(a.schema,i,be),$[i.attributes.Namespace.value]&&K("Schema namespace collides with other schema",this),$[i.attributes.Namespace.value]=a.schema,e.target=a.schema;break;case"EntityType":if(O(i,"Name"),a.type={$Kind:i.local},a.qualifiedTypeName=N[a.schemaName]+"."+i.attributes.Name.value,Z(a.type),A(a.type,i,["Abstract","BaseType","HasStream","OpenType"]),$.$Version<"4.0"){let n=Object.values(i.attributes).find(g=>g.local==="HasStream");n&&n.value=="true"&&(a.type.$HasStream=!0)}Te(a.type,i,De),a.schema[i.attributes.Name.value]&&K("Type name collides with other schema child",this),a.schema[i.attributes.Name.value]=a.type,e.target=a.type;break;case"Key":A(null,i,[]),a.type.$Key=[];break;case"PropertyRef":if(O(i,"Name"),a.type){let n={};if(A(n,i,["Name","Alias"]),n.$Alias){let g={};g[n.$Alias]=n.$Name,a.type.$Key.push(g)}else a.type.$Key.push(n.$Name)}break;case"ComplexType":O(i,"Name"),a.type={$Kind:i.local},a.qualifiedTypeName=N[a.schemaName]+"."+i.attributes.Name.value,Z(a.type),A(a.type,i,["Abstract","BaseType","OpenType"]),a.schema[i.attributes.Name.value]&&K("Type name collides with other schema child",this),a.schema[i.attributes.Name.value]=a.type,e.target=a.type;break;case"NavigationProperty":if(O(i,"Name"),a.property={$Kind:i.local},Z(a.property),$.$Version<"4.0"){let n=Y(i.attributes.Relationship.value),g=d.association[R[n.qualifier]+"."+n.name],B=g[i.attributes.ToRole.value];a.property.$Type=B.type,B.multiplicity=="*"&&(a.property.$Collection=!0),B.multiplicity=="0..1"&&(a.property.$Nullable=!0),B.$Partner&&(a.property.$Partner=B.$Partner);let M=g[i.attributes.FromRole.value];M.onDelete&&(a.property.$OnDelete=M.onDelete),M.constraint&&(a.property.$ReferentialConstraint=M.constraint)}else O(i,"Type"),A(a.property,i,["Type","Nullable","ContainsTarget","Partner"]);a.type[i.attributes.Name.value]&&K("Navigation property name collides with other property",this),a.type[i.attributes.Name.value]=a.property,e.target=a.property;break;case"OnDelete":O(i,"Action"),A(null,i,[],["Action"]),a.property&&(a.property.$OnDelete=i.attributes.Action.value,e.target=a.property,e.prefix="$OnDelete");break;case"ReferentialConstraint":a.property&&(O(i,"Property"),O(i,"ReferencedProperty"),A(null,i,[],["Property","ReferencedProperty"]),a.property.$ReferentialConstraint||(a.property.$ReferentialConstraint={}),a.property.$ReferentialConstraint[i.attributes.Property.value]=i.attributes.ReferencedProperty.value,e.target=a.property.$ReferentialConstraint,e.prefix=i.attributes.Property.value);break;case"Property":O(i,"Name"),O(i,"Type"),a.property={},Z(a.property),A(a.property,i,["Type","Nullable","MaxLength","Unicode","Precision","Scale","SRID","DefaultValue"],$.$Version<"4.0"?["ConcurrencyMode","FixedLength"]:[]),Re(a.property,i),a.type[i.attributes.Name.value]&&K("Property name collides with other property",this),a.type[i.attributes.Name.value]=a.property,e.target=a.property;break;case"EnumType":O(i,"Name"),a.type={$Kind:i.local},Z(a.type),a.enumMemberValue=0,A(a.type,i,["UnderlyingType","IsFlags"]),a.schema[i.attributes.Name.value]&&K("Type name collides with other schema child",this),a.schema[i.attributes.Name.value]=a.type,e.target=a.type;break;case"Member":{O(i,"Name"),A(null,i,[],["Value"]);let n=i.attributes.Name.value,g=Number(i.attributes.Value?.value);Z(a.type,n),a.type[n]!==void 0&&K("Enumeration member name collides with other member",this),a.type[n]=Number.isNaN(g)?a.enumMemberValue:g,a.enumMemberValue++,e.target=a.type,e.prefix=i.attributes.Name.value;break}case"TypeDefinition":O(i,"Name"),O(i,"UnderlyingType"),a.type={$Kind:i.local},Z(a.type),A(a.type,i,["UnderlyingType","MaxLength","Unicode","Precision","Scale","SRID"]),a.schema[i.attributes.Name.value]&&K("Type name collides with other schema child",this),a.schema[i.attributes.Name.value]=a.type,e.target=a.type;break;case"Action":O(i,"Name"),a.overload={$Kind:i.local},Z(a.overload),A(a.overload,i,["EntitySetPath","IsBound"]),a.schema[i.attributes.Name.value]||(a.schema[i.attributes.Name.value]=[]),Array.isArray(a.schema[i.attributes.Name.value])?a.schema[i.attributes.Name.value].push(a.overload):K("Action name collides with other schema child",this),e.target=a.overload;break;case"Function":O(i,"Name"),a.overload={$Kind:i.local},Z(a.overload),A(a.overload,i,["EntitySetPath","IsBound","IsComposable"]),a.schema[i.attributes.Name.value]||(a.schema[i.attributes.Name.value]=[]),Array.isArray(a.schema[i.attributes.Name.value])?a.schema[i.attributes.Name.value].push(a.overload):K("Function name collides with other schema child",this),e.target=a.overload;break;case"Parameter":{if(!a.overload){K("Unexpected element: Parameter",this);break}O(i,"Name"),O(i,"Type");let n={$Name:i.attributes.Name.value};Z(n),A(n,i,["Type","Nullable","MaxLength","Unicode","Precision","Scale","SRID"],$.$Version<"4.0"?["Mode"]:[]),Te(n,i,Ce),a.overload.$Parameter||(a.overload.$Parameter=[]),a.overload.$Parameter.push(n),e.target=n;break}case"ReturnType":O(i,"Type"),a.overload.$ReturnType={},Z(a.overload.$ReturnType),A(a.overload.$ReturnType,i,["Type","Nullable","MaxLength","Unicode","Precision","Scale","SRID"]),e.target=a.overload.$ReturnType;break;case"EntityContainer":O(i,"Name"),$.$EntityContainer=a.schemaName+"."+i.attributes.Name.value,a.container={$Kind:i.local},A(a.container,i,["Extends"]),a.schema[i.attributes.Name.value]&&K("Entity container name collides with other schema child",this),a.schema[i.attributes.Name.value]=a.container,e.target=a.container;break;case"EntitySet":{O(i,"Name"),O(i,"EntityType"),a.containerChild={$Collection:!0},A(a.containerChild,i,["EntityType","IncludeInServiceDocument"]),Te(a.containerChild,i,Ve),a.container[i.attributes.Name.value]&&K("Entity set name collides with other container child",this),a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild;let n=d.entitySet[i.attributes.Name.value];n&&n.length>0&&(a.containerChild.$NavigationPropertyBinding={},n.forEach(g=>{let B=(g.type!=a.containerChild.$Type?g.type+"/":"")+g.path;a.containerChild.$NavigationPropertyBinding[B]=g.target}));break}case"Singleton":O(i,"Name"),O(i,"Type"),a.containerChild={},A(a.containerChild,i,["Type","Nullable"]),a.container[i.attributes.Name.value]&&K("Singleton name collides with other container child",this),a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild;break;case"ActionImport":O(i,"Name"),O(i,"Action"),a.containerChild={},A(a.containerChild,i,["Action","EntitySet"]),a.container[i.attributes.Name.value]&&K("Action import name collides with other container child",this),a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild;break;case"FunctionImport":if(O(i,"Name"),a.containerChild={},$.$Version<"4.0"){let n=Object.values(i.attributes).find(M=>M.local=="HttpMethod"),g=a.schemaName+"."+i.attributes.Name.value;a.overload={},n==null?(i.attributes.IsBindable&&i.attributes.IsBindable.value=="true"?(a.overload.$IsBound=!0,e.target=a.overload):(a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild),i.attributes.IsSideEffecting&&i.attributes.IsSideEffecting.value=="false"?(a.overload.$Kind="Function",a.overload.$IsBound||(a.containerChild.$Function=g)):(a.overload.$Kind="Action",a.overload.$IsBound||(a.containerChild.$Action=g))):n.value=="GET"?(a.containerChild.$Function=g,a.overload.$Kind="Function",a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild):(a.containerChild.$Action=g,a.overload.$Kind="Action",a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild),A(a.containerChild,i,["EntitySet"],["ReturnType","IsBindable","IsSideEffecting"]),i.attributes.ReturnType&&(a.overload.$ReturnType={},A(a.overload.$ReturnType,i,["ReturnType"],["EntitySet","IsBindable","IsSideEffecting"])),a.schema[i.attributes.Name.value]=[a.overload]}else O(i,"Function"),A(a.containerChild,i,["Function","EntitySet","IncludeInServiceDocument"]),a.container[i.attributes.Name.value]&&K("Function import name collides with other container child",this),a.container[i.attributes.Name.value]=a.containerChild,e.target=a.containerChild;break;case"NavigationPropertyBinding":{O(i,"Path"),O(i,"Target"),A(null,i,[],["Path","Target"]),a.containerChild.$NavigationPropertyBinding||(a.containerChild.$NavigationPropertyBinding={});let n=se(i.attributes.Target.value);n.startsWith(se($.$EntityContainer)+"/")&&(n=n.substring(n.indexOf("/")+1)),a.containerChild.$NavigationPropertyBinding[i.attributes.Path.value]=n;break}case"Term":{let n={$Kind:i.local};Z(n),A(n,i,["Type","Nullable","DefaultValue","AppliesTo","BaseTerm","MaxLength","Precision","Scale","SRID"]),a.schema[i.attributes.Name.value]&&K("Term name collides with other schema child",this),a.schema[i.attributes.Name.value]=n,e.target=n;break}case"Annotations":{O(i,"Target");let n=se(i.attributes.Target?.value);a.schema.$Annotations||(a.schema.$Annotations={}),a.schema.$Annotations[n]||(a.schema.$Annotations[n]={}),e.target=a.schema.$Annotations[n],a.qualifier=i.attributes.Qualifier?.value;break}case"Documentation":e.target=p.target;break;case"Summary":case"LongDescription":a.text="",o.$Term="Org.OData.Core.V1."+(i.local==="Summary"?"Description":i.local);case"ValueAnnotation":case"Annotation":["ValueAnnotation","Annotation"].includes(i.local)&&O(i,"Term"),A(o,i,["Term","Qualifier"].concat(t)),a.annotation.unshift(o),e.target=a.annotatable[0].target,e.prefix=a.annotatable[0].prefix+"@"+se(o.$Term)+(a.qualifier?"#"+a.qualifier:"")+(o.$Qualifier?"#"+o.$Qualifier:"");break;case"Collection":A(null,i,[]),o.value=[],a.annotation.unshift(o);break;case"Record":A(null,i,[],["Type"]),o.value=ye(i),Z(o.value),a.annotation.unshift(o),e.target=a.annotation[0].value;break;case"PropertyValue":O(i,"Property"),A(o,i,["Property"].concat(t)),a.annotation.unshift(o),e.target=a.annotatable[0].target,e.prefix=o.$Property;break;case"Apply":O(i,"Function"),A(o,i,["Function"]),o.value=[],a.annotation.unshift(o),e.target=o;break;case"Add":case"And":case"Div":case"DivBy":case"Eq":case"Ge":case"Gt":case"Has":case"If":case"In":case"Le":case"Lt":case"Mod":case"Mul":case"Ne":case"Or":case"Sub":A(null,i,[]),o.value=[],a.annotation.unshift(o),e.target=o;break;case"Cast":case"IsOf":O(i,"Type"),A(o,i,["Type","MaxLength","Unicode","Precision","Scale","SRID"]),a.annotation.unshift(o),e.target=o;break;case"LabeledElement":O(i,"Name"),A(o,i,["Name"].concat(t)),a.annotation.unshift(o),e.target=o;break;case"Neg":case"Not":case"Null":A(null,i,[]),o.value={},a.annotation.unshift(o),e.target=o;break;case"UrlRef":A(null,i,[]),a.annotation.unshift(o),e.target=o;break;case"String":A(null,i,[]),a.text="";break;case"DataServices":A(null,i,[]);break;case"AnnotationPath":case"ModelElementPath":case"NavigationPropertyPath":case"PropertyPath":case"Path":case"Binary":case"Bool":case"Date":case"DateTimeOffset":case"Decimal":case"Duration":case"EnumMember":case"Float":case"Guid":case"Int":case"TimeOfDay":case"LabeledElementReference":A(null,i,[]),a.text="";break;case"Association":case"End":case"AssociationSet":case"Principal":case"Dependent":$.$Version>="4.0"&&K(`Unexpected element: ${i.local}`,this);break}a.annotatable.unshift(e),p.target=e.target},ne.ontext=function(i){a.text===""?a.text=i:i.trim()!==""&&!ce()&&K(`Element ${this.tag.name}, unexpected text: ${i}`,this)},ne.oncdata=function(i){a.text==null?K(`Element ${this.tag.name}, unexpected CDATA: ${i}`,this):a.text+=i},ne.onclosetag=function(i){let t=i.includes(":")?i.split(":")[1]:i;if(re(t)){switch(t){case"Edmx":break;case"Reference":a.reference=null;break;case"Include":a.include=null;break;case"Schema":a.schema=null,a.schemaName=null;break;case"ComplexType":case"EntityType":a.type=null,a.qualifiedTypeName=null;break;case"NavigationProperty":case"Property":a.property=null;break;case"EnumType":a.enumMemberValue=null;break;case"Action":case"Function":a.overload=null;break;case"ActionImport":case"EntitySet":case"FunctionImport":case"Singleton":a.containerChild=null;break;case"Annotations":a.qualifier=null;break;case"Summary":case"LongDescription":if(a.text.length===0){a.text=null;break}V(a.annotation[0],a.text.replace(/\r\n|\r(?!\n)/g,`
+`)),a.text=null;case"ValueAnnotation":case"Annotation":{let e=a.annotation.shift();if(a.annotatable[1].target!=null){let o=a.annotatable[1].prefix+"@"+se(e.$Term)+(a.qualifier?"#"+a.qualifier:"")+(e.$Qualifier?"#"+e.$Qualifier:""),n=Y(e.$Term);if(n.name=="MediaType"&&R[n.qualifier]=="Org.OData.Core.V1"&&e.value=="application/json"&&a.annotation.length>0&&(a.annotation[0].$isJSON=!0),e.$isJSON||n.name=="Schema"&&R[n.qualifier]=="Org.OData.JSON.V1")try{e.value=JSON.parse(e.value)}catch{K(`Element ${this.tag.name}, invalid JSON`,this)}a.annotatable[1].target[o]=e.value!==void 0?e.value:!0}break}case"Record":case"Collection":{let e=a.annotation.shift();V(a.annotation[0],e.value);break}case"PropertyValue":{let e=a.annotation.shift();if(e.$isJSON)try{e.value=JSON.parse(e.value)}catch{K(`Element ${this.tag.name}, invalid JSON`,this)}a.annotation[0]&&(a.annotation[0].value[e.$Property]=e.value);break}case"Add":case"Apply":case"And":case"Div":case"DivBy":case"Eq":case"Ge":case"Gt":case"Has":case"In":case"Le":case"Lt":case"If":case"Mod":case"Mul":case"Ne":case"Neg":case"Not":case"Or":case"Sub":case"Cast":case"IsOf":{let e=a.annotation.shift();e["$"+t]=e.value,delete e.value,V(a.annotation[0],e);break}case"LabeledElement":{let e=a.annotation.shift();V(a.annotation[0],{$LabeledElement:e.value,$Name:e.$Name});break}case"LabeledElementReference":case"Path":{let e={};e["$"+t]=ee(a.text),V(a.annotation[0],e),a.text=null;break}case"AnnotationPath":case"ModelElementPath":case"NavigationPropertyPath":case"PropertyPath":V(a.annotation[0],ee(a.text)),a.text=null;break;case"Bool":V(a.annotation[0],a.text==="true"),a.text=null;break;case"Binary":case"Date":case"DateTimeOffset":case"Duration":case"Guid":case"TimeOfDay":V(a.annotation[0],a.text),a.text=null;break;case"String":V(a.annotation[0],a.text.replace(/\r\n|\r(?!\n)/g,`
+`)),a.text=null;break;case"Decimal":case"Float":case"Int":V(a.annotation[0],isNaN(a.text)?a.text:Number(a.text)),a.text=null;break;case"EnumMember":a.annotation[0].$Term||a.annotation[0].$Property?V(a.annotation[0],H(a.text)):V(a.annotation[0],{$Cast:H(a.text),$Type:a.text.substring(0,a.text.indexOf("/"))}),a.text=null;break;case"Null":{let e=a.annotation.shift();Object.keys(e).length===1?V(a.annotation[0],null):(e.$Null=null,delete e.value,V(a.annotation[0],e));break}case"UrlRef":{let e=a.annotation.shift();V(a.annotation[0],{$UrlRef:e.value});break}default:}a.annotatable.shift()}};function Z(i,t){h&&(t?i[t+"@parser.line"]=ne.line+1:i["@parser.line"]=ne.line+1)}function V(i,t){Array.isArray(i.value)?i.value.push(t):i.value=t}function H(i){return i.trim().replace(/\s+/g," ").split(" ").map(t=>t.substring(t.indexOf("/")+1)).join(",")}function ee(i){return i.split("/").map(t=>{let e=t.indexOf("@")+1,o=t.substring(0,e),n=t.substring(e),g=n.lastIndexOf(".");return o+(g===-1?n:(N[n.substring(0,g)]||n.substring(0,g))+n.substring(g))}).join("/")}function se(i){let t=i.indexOf("("),e=i.lastIndexOf(")"),o=t===-1?i:i.substring(0,t),n=t===-1?"":i.substring(t,e+1),g=t===-1?"":i.substring(e+1);return o=o.split("/").map(B=>{let M=B.lastIndexOf(".");return M===-1?B:(N[B.substring(0,M)]||B.substring(0,M))+B.substring(M)}).join("/"),n!==""&&(n="("+n.substring(1,n.length-1).split(/,\s*/).map(M=>{let oe=M.startsWith("Collection("),ie=oe?M.substring(11,M.length-1):M,le=ie.lastIndexOf("."),te=(N[ie.substring(0,le)]||ie.substring(0,le))+ie.substring(le);return oe?`Collection(${te})`:te}).join(",")+")"),o+n+g}function Y(i){let t=i.lastIndexOf(".");return console.assert(t>0,"Invalid qualified name "+i),{qualifier:i.substring(0,t),name:i.substring(t+1)}}function ye(i){let t={};if(i.attributes.Type){let e=i.attributes.Type.value,o=e.substring(0,e.lastIndexOf(".")),n=_[o];t[`@${$.$Version<="4.0"?"odata.":""}type`]=(n||"")+"#"+ee(e)}return t}function O(i,t){if(!i.attributes[t])throw new Error(`Element ${i.local}, missing attribute: ${t}`)}function A(i,t,e,o=[]){e.forEach(n=>{if(t.attributes[n])switch(n){case"Nullable":t.attributes[n].value==="true"&&(i.$Nullable=!0);break;case"Abstract":case"ContainsTarget":case"HasStream":case"IsBound":case"IsComposable":case"IsFlags":case"OpenType":t.attributes[n].value==="true"&&(i["$"+n]=!0);break;case"Action":case"Function":i["$"+n]=ee(t.attributes[n].value);break;case"Alias":case"Name":case"Namespace":case"Partner":case"Property":case"Qualifier":case"TargetNamespace":case"Term":case"TermNamespace":case"UnderlyingType":case"Version":i["$"+n]=t.attributes[n].value;break;case"AppliesTo":i.$AppliesTo=t.attributes[n].value.trim().replace(/\s+/g," ").split(" ");break;case"BaseTerm":case"BaseType":case"EntitySetPath":case"Extends":i["$"+n]=se(t.attributes[n].value);break;case"DefaultValue":{let g=t.attributes[n].value,B=t.attributes.Type&&t.attributes.Type.value;g==="null"?i.$DefaultValue=null:g==="true"?i.$DefaultValue=!0:g==="false"?i.$DefaultValue=!1:i.$DefaultValue=g===""||isNaN(g)||B==="Edm.String"?g:Number(g);break}case"EntitySet":{let g=se(t.attributes[n].value);g.startsWith(se($.$EntityContainer)+"/")&&(g=g.substring(g.indexOf("/")+1)),i.$EntitySet=g;break}case"EntityType":i.$Type=se(t.attributes[n].value);break;case"MaxLength":t.attributes[n].value!=="max"&&(i.$MaxLength=Number(t.attributes[n].value));break;case"Precision":case"SRID":i["$"+n]=t.attributes[n].value===""||isNaN(t.attributes[n].value)?t.attributes[n].value:Number(t.attributes[n].value);break;case"Unicode":t.attributes[n].value==="false"&&(i.$Unicode=!1);break;case"IncludeInServiceDocument":t.local==="EntitySet"&&t.attributes[n].value==="false"?i.$IncludeInServiceDocument=!1:t.local==="FunctionImport"&&t.attributes[n].value==="true"&&(i.$IncludeInServiceDocument=!0);break;case"Scale":(t.attributes[n].value!=="variable"||t.local==="Cast"||t.local==="IsOf")&&(i.$Scale=isNaN(t.attributes[n].value)?t.attributes[n].value:Number(t.attributes[n].value));break;case"ReturnType":case"Type":{let g=t.attributes[n].value;g.substring(0,11)==="Collection("&&(i.$Collection=!0,g=g.substring(11,g.length-1)),g!=="Edm.String"&&(i.$Type=se(g));break}case"AnnotationPath":case"ModelElementPath":case"NavigationPropertyPath":case"PropertyPath":i.value=ee(t.attributes[n].value);break;case"Path":i.value={$Path:ee(t.attributes[n].value)};break;case"String":i.value=t.attributes[n].value.replace(/\r\n|\r(?!\n)/g,`
+`);break;case"Binary":case"Date":case"DateTimeOffset":case"Duration":case"Guid":case"TimeOfDay":i.value=t.attributes[n].value;break;case"Bool":i.value=t.attributes[n].value==="true";break;case"Decimal":case"Float":case"Int":i.value=isNaN(t.attributes[n].value)?t.attributes[n].value:Number(t.attributes[n].value);break;case"EnumMember":i.value=H(t.attributes[n].value);break;case"UrlRef":i.value={$UrlRef:t.attributes[n].value};break}else n==="Nullable"&&i.$Collection&&(t.local==="Property"||t.local==="Term")&&$.$Version>="4.01"?K(`Element ${t.local}, Type=Collection without Nullable attribute`,ne):n==="Nullable"&&!i.$Collection&&t.local!=="Singleton"&&!($.$Version<"4.0"&&t.local==="Parameter")?i.$Nullable=!0:n==="Scale"&&(i.$Type==="Edm.Decimal"||i.$UnderlyingType==="Edm.Decimal")&&t.local!=="Cast"&&t.local!=="IsOf"?i.$Scale=0:n==="Precision"&&["Edm.DateTimeOffset","Edm.DateTime"].includes(i.$Type)&&(i.$Precision=0)}),t.local==="NavigationProperty"&&i.$Collection&&i.$Nullable&&(K("Element NavigationProperty, Type=Collection(...) with Nullable attribute",ne),delete i.$Nullable),Object.values(t.attributes).filter(n=>n.prefix===""&&n.local!=="Name"&&!e.includes(n.local)&&!o.includes(n.local)).forEach(n=>{K(`Element ${t.local}, unexpected attribute: ${n.name}`,ne)}),T&&Object.values(t.attributes).filter(n=>n.prefix!=""&&n.prefix!="xmlns"&&n.uri!="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata").forEach(n=>{$.$Reference||($.$Reference={}),$.$Reference[n.uri]||($.$Reference[n.uri]={$Include:[{$Namespace:Dt(n.uri),$Alias:n.prefix}]}),i[`@${$.$Reference[n.uri].$Include[0].$Alias}.${n.local}`]=n.value==="true"?!0:n.value==="false"?!1:n.value})}function K(i,t){if(v)throw new Error(i);S.push(Xe({message:i},c,t))}let X="http://www.sap.com/Protocols/SAPData",Ve={creatable:{attrValue:"false",vocabulary:"Capabilities",term:"InsertRestrictions",value:{Insertable:!1}},updatable:{attrValue:"false",vocabulary:"Capabilities",term:"UpdateRestrictions",value:{Updatable:!1}},deletable:{attrValue:"false",vocabulary:"Capabilities",term:"DeleteRestrictions",value:{Deletable:!1}},countable:{attrValue:"false",vocabulary:"Capabilities",term:"CountRestrictions",value:{Countable:!1}},"requires-filter":{attrValue:"true",vocabulary:"Capabilities",term:"FilterRestrictions",value:{RequiresFilter:!0}},pageable:{attrValue:"false",vocabulary:"Capabilities",becomes:[{term:"TopSupported",value:!1},{term:"SkipSupported",value:!1}]}},De={label:{vocabulary:"Core",term:"Description"}},Ce={label:{vocabulary:"Core",term:"Description"}},be={"schema-version":{vocabulary:"Core",term:"SchemaVersion"}};function Te(i,t,e){if($.$Version!=="2.0")return;let o=Object.values(t.attributes).filter(n=>n.uri===X);for(let n of o){let g=e[n.local];if(!g||g.attrValue!==void 0&&n.value!==g.attrValue)continue;d.needs[g.vocabulary]=!0;let B=g.becomes??[{term:g.term,value:g.value}];for(let M of B)i[`@${N[Ee[g.vocabulary].Namespace]}.${M.term}`]=M.value??n.value}}let Fe={"single-value":"SingleValue","multi-value":"MultiValue",interval:"SingleRange"};function Re(i,t){if($.$Version!=="2.0")return;let e=!0,o=!0;for(let n of Object.values(t.attributes))if(n.uri===X)switch(n.local){case"label":{let g=`@${N[Ee.Core.Namespace]}.Description`;i[g]===void 0&&(i[g]=n.value);break}case"quickinfo":i[`@${N[Ee.Core.Namespace]}.Description`]=n.value;break;case"creatable":e=n.value==="true";break;case"updatable":o=n.value==="true";break;case"validation-regexp":i[`@${N[Ee.Validation.Namespace]}.Pattern`]=n.value,d.needs.Validation=!0;break;case"variable-scale":n.value==="true"&&i.$Type==="Edm.Decimal"&&(i.$Scale="floating");break;case"filterable":n.value==="false"&&(d.needs.Capabilities=!0,d.nonFilterable[a.qualifiedTypeName]||(d.nonFilterable[a.qualifiedTypeName]=[]),d.nonFilterable[a.qualifiedTypeName].push(t.attributes.Name.value));break;case"filter-restriction":{let g=Fe[n.value];g&&(d.needs.Capabilities=!0,d.filterRestrictions[a.qualifiedTypeName]||(d.filterRestrictions[a.qualifiedTypeName]={}),d.filterRestrictions[a.qualifiedTypeName][t.attributes.Name.value]=g)}break;case"required-in-filter":n.value==="true"&&(d.needs.Capabilities=!0,d.requiredInFilter[a.qualifiedTypeName]||(d.requiredInFilter[a.qualifiedTypeName]=[]),d.requiredInFilter[a.qualifiedTypeName].push(t.attributes.Name.value));break;case"sortable":n.value==="false"&&(d.needs.Capabilities=!0,d.nonSortable[a.qualifiedTypeName]||(d.nonSortable[a.qualifiedTypeName]=[]),d.nonSortable[a.qualifiedTypeName].push(t.attributes.Name.value));break}!e&&!o&&(i[`@${N[Ee.Core.Namespace]}.Computed`]=!0),e&&!o&&(i[`@${N[Ee.Core.Namespace]}.Immutable`]=!0)}try{ne.write(c).close()}catch(i){throw Xe(i,c,ne)}for(let[i,t]of Object.entries(Ee))d.needs[i]&&R[t.Namespace]===void 0&&($.$Reference||($.$Reference={}),$.$Reference[t.Uri]={$Include:[{$Namespace:t.Namespace,$Alias:i}]});let fe=`@${N[Ee.Capabilities.Namespace]}.FilterRestrictions`,Oe=`@${N[Ee.Capabilities.Namespace]}.SortRestrictions`;for(let i of Object.values(a.container).filter(t=>t.$Collection))d.nonFilterable[i.$Type]&&(i[fe]||(i[fe]={}),i[fe].NonFilterableProperties=d.nonFilterable[i.$Type]),d.filterRestrictions[i.$Type]&&(i[fe]||(i[fe]={}),i[fe].FilterExpressionRestrictions=Object.entries(d.filterRestrictions[i.$Type]).map(([t,e])=>({Property:t,AllowedExpressions:e}))),d.requiredInFilter[i.$Type]&&(i[fe]||(i[fe]={}),i[fe].RequiredProperties=d.requiredInFilter[i.$Type]),d.nonSortable[i.$Type]&&(i[Oe]={NonSortableProperties:d.nonSortable[i.$Type]});return $};function Dt(c){return c.replace(/^.+:\/\//,"").replace(/\//g,".").replace(/\.(?=[0-9])/g,".n")}function Xe(c,h,T){return c.parser={construct:h.toString().substring(T.startTagPosition-1,T.position),line:T.line+1,column:T.column},c}});var We=Se((Qt,Qe)=>{Qe.exports={nameParts:tt};Qe.exports.EDM=class{#e={};boundOverloads={};derivedTypes={};#t={};namespace={Edm:"Edm"};namespaceUrl={};voc={};addDocument(c,h){this.#i(c),Ot(this.voc,this.#t),this.#n(c,h),this.entityContainer=this.#e[c.$EntityContainer]}#i(c){for(let[h,T]of Object.entries(c.$Reference??{}))for(let v of T.$Include??[]){let S=v.$Alias??v.$Namespace;this.#t[v.$Namespace]=S,this.namespace[S]=v.$Namespace,this.namespace[v.$Namespace]=v.$Namespace,this.namespaceUrl[v.$Namespace]=h}}#n(c,h){for(let[T,v]of Object.entries(c)){if(!Ae(T))continue;let S=v[this.voc.Core.DefaultNamespace],$=v.$Alias||T;this.#t[T]=$,this.namespace[$]=T,this.namespace[T]=T;for(let[N,R]of Object.entries(v))if(Ae(N)&&(this.#e[`${T}.${N}`]=R,Array.isArray(R))){let _=$+"."+N;for(let d of R){if(!d.$IsBound)continue;let P=d.$Parameter[0].$Type+(d.$Parameter[0].$Collection?"-c":"");this.boundOverloads[P]||(this.boundOverloads[P]=[]),this.boundOverloads[P].push({name:S?N:_,overload:d})}}}for(let[T,v]of Object.entries(c))if(Ae(T)){this.#a(v.$Annotations??{},h);for(let[S,$]of Object.entries(v))if(Ae(S)&&$.$BaseType){let N=this.namespaceQualifiedName($.$BaseType);this.derivedTypes[N]||(this.derivedTypes[N]=[]),this.derivedTypes[N].push(T+"."+S)}}}#a(c,h){for(let[T,v]of Object.entries(c)){let S=T.split("/"),$=S[0].indexOf("("),N;if($==-1)N=this.element(S[0]);else{N=this.element(S[0].substring(0,$));let R=S[0].substring($+1,S[0].length-1);N=N?.find(_=>_.$Kind=="Action"&&_.$IsBound!=!0&&R==""||_.$Kind=="Action"&&R==(_.$Parameter?.[0].$Collection?`Collection(${_.$Parameter[0].$Type})`:_.$Parameter[0].$Type||"")||R==(_.$Parameter||[]).map(d=>{let P=d.$Type||"Edm.String";return d.$Collection?`Collection(${P})`:P}).join(","))}if(!N)h.push(`Invalid annotation target '${T}'`);else if(Array.isArray(N))h.push(`Ignoring annotations targeting all overloads of '${T}'`);else switch(S.length){case 1:Object.assign(N,v);break;case 2:if(["Action","Function"].includes(N.$Kind))if(S[1]=="$ReturnType")N.$ReturnType&&Object.assign(N.$ReturnType,v);else{let R=N.$Parameter.find(_=>_.$Name==S[1]);Object.assign(R,v)}else typeof N[S[1]]=="object"?Object.assign(N[S[1]],v):N.$Kind!=="EnumType"&&h.push(`Invalid annotation target '${T}'`);break;default:h.push("More than two annotation target path segments")}}}element(c){return this.#e[this.namespaceQualifiedName(c)]}namespaceQualifiedName(c){let h=tt(c);return this.namespace[h.qualifier]+"."+h.name}key(c){let h=c,T=null;for(;h&&(T=h.$Key,!(T||!h.$BaseType));)h=this.element(h.$BaseType);return T??[]}get resources(){return Object.entries(this.entityContainer??{}).filter(([c])=>Ae(c))}get structuredTypes(){return Object.entries(this.#e).filter(([,c])=>["EntityType","ComplexType"].includes(c.$Kind))}propertiesMapOfStructuredType(c){let h=c&&c.$BaseType?this.propertiesMapOfStructuredType(this.element(c.$BaseType)):{};return c&&Object.keys(c).filter(T=>Ae(T)).forEach(T=>{h[T]=c[T]}),h}propertiesOfStructuredType(c){return Object.entries(this.propertiesMapOfStructuredType(c))}directPropertiesOfStructuredType(c){return Object.entries(c).filter(([h])=>Ae(h))}enumTypeMembers(c){return Object.entries(c).filter(([h])=>Ae(h))}referencedEntityTypes(c){let h=[];for(let T of c){let v=this.entityContainer[T];if(v?.$Type&&!h.includes(v.$Type)&&h.push(v.$Type),v?.$Action||v?.$Function){let S=this.element(v.$Action||v.$Function);for(let $ of S){if($.$IsBound)continue;let N=$.$ReturnType?.$Type;N&&!h.includes(N)&&h.push(N)}}}for(let T of h){let v=this.propertiesOfStructuredType(this.element(T)).filter(S=>S[1].$ContainsTarget).map(S=>S[1].$Type);for(let S of v)h.includes(S)||h.push(S)}return h}};function Ae(c){return!c.startsWith("$")&&!c.includes("@")}function tt(c){let h=c.lastIndexOf(".");return{qualifier:c.substring(0,h),name:c.substring(h+1)}}function Ot(c,h){let T={Aggregation:["ApplySupported"],Authorization:["Authorizations","SecuritySchemes"],Capabilities:["BatchSupport","BatchSupported","ChangeTracking","CountRestrictions","DeleteRestrictions","DeepUpdateSupport","ExpandRestrictions","FilterRestrictions","IndexableByKey","InsertRestrictions","KeyAsSegmentSupported","NavigationRestrictions","OperationRestrictions","ReadRestrictions","SearchRestrictions","SelectSupport","SkipSupported","SortRestrictions","TopSupported","UpdateRestrictions"],Core:["AcceptableMediaTypes","Computed","ComputedDefaultValue","DefaultNamespace","Description","Example","Immutable","LongDescription","OptionalParameter","Permissions","SchemaVersion"],JSON:["Schema"],Validation:["AllowedValues","Exclusive","Maximum","Minimum","Pattern"]};for(let v of Object.keys(T)){c[v]={};let S=`Org.OData.${v}.V1`;for(let $ of T[v])c[v][$]=`@${h[S]||S}.${$}`}}});var nt=Se((Ht,it)=>{var{nameParts:ke}=We();it.exports={resourceDiagram:xt};function xt(c,h,T){let v="",S="",$={resource:"{bg:lawngreen}",entityType:"{bg:lightslategray}",complexType:"",external:"{bg:whitesmoke}"},N=T?T.map(d=>c.namespaceQualifiedName(d)):null;for(let[d,P]of c.structuredTypes){if(N&&!N.includes(d))continue;let w=ke(d).name;v+=S+(P.$BaseType?"["+ke(P.$BaseType).name+(P.$Kind=="EntityType"?$.entityType:$.complexType)+"]^":"")+"["+w+(P.$Kind=="EntityType"?$.entityType:$.complexType)+"]";for(let[J,x]of c.directPropertiesOfStructuredType(P)){let ae=ke(x.$Type??"Edm.String");if(x.$Kind=="NavigationProperty"||ae.qualifier!="Edm"){let j=c.element(x.$Type),Q=x.$Partner&&j&&j[x.$Partner]&&j[x.$Partner].$Partner==J;(!Q||J<=x.$Partner)&&(v+=",["+w+"]"+(x.$Kind!="NavigationProperty"||x.$ContainsTarget?"++":Q?R(j[x.$Partner]):"")+"-"+R(x)+(x.$Kind!="NavigationProperty"||Q?"":">")+"["+(j?ae.name+(j.$Kind=="EntityType"?$.entityType:$.complexType):x.$Type+$.external)+"]")}}S=","}for(let[d,P]of c.resources.reverse())if(!(h&&!h.includes(d))){if(P.$Type)v+=S+"["+d+"%20"+$.resource+"]++-"+R(P)+">["+ke(P.$Type).name+"]";else if(P.$Action){v+=S+"["+d+$.resource+"]";let w=c.element(P.$Action).find(J=>!J.$IsBound);v+=_(d,w)}else if(P.$Function){v+=S+"["+d+$.resource+"]";let w=c.element(P.$Function);if(w){let J=w.filter(x=>!x.$IsBound);v+=_(d,J[0])}}S=","}return v!=""&&(v=`
+
+## Entity Data Model
+![ER Diagram](https://yuml.me/diagram/class/`+v+`)
+
+### Legend
+![Legend](https://yuml.me/diagram/plain;dir:TB;scale:60/class/[External.Type`+$.external+"],[ComplexType"+$.complexType+"],[EntityType"+$.entityType+"],[EntitySet/Singleton/Operation"+$.resource+"])"),v;function R(d){return d.$Collection?"*":d.$Nullable?"0..1":""}function _(d,P){let w="";P.$ReturnType&&c.element(P.$ReturnType.$Type??"Edm.String")&&(w+="-"+R(P.$ReturnType,!0)+">["+ke(P.$ReturnType.$Type).name+"]");for(let J of P.$Parameter??[])c.element(J.$Type??"Edm.String")&&(w+=S+"["+d+"]in-"+R(J.$Type)+">["+ke(J.$Type).name+"]");return w}}});var st=Se((Yt,rt)=>{var{EDM:It,nameParts:xe}=We(),{resourceDiagram:Rt}=nt(),pe={read:"",create:"-create",update:"-update"},Pt={"":"","-create":" (for create)","-update":" (for update)"},at=["compute","expand","select","filter","search","count","orderby","skip","top","format","index","schemaversion","skiptoken","apply"];rt.exports.csdl2openapi=function(c,{scheme:h="https",host:T="localhost",basePath:v="/service-root",diagram:S=!1,openapiVersion:$="3.0.2",maxLevels:N=4,messages:R=[],skipBatchPath:_=!1,defaultTitle:d=null,defaultDescription:P=null,rootResourcesToKeep:w=null}={}){let J=h+"://"+T+v,x=c.$Version<="4.0"?"$":"",ae={},j=$>="3.1.0",Q={list:[],used:{},entityReferenceNeeded:!1},D=new It;D.addDocument(c,R);let he=w?D.referencedEntityTypes(w):null,b=D.voc,W=D.entityContainer??{},ce=W[b.Capabilities.KeyAsSegmentSupported],ve=W[b.Aggregation.ApplySupported],re=W[b.Capabilities.DeepUpdateSupport]&&W[b.Capabilities.DeepUpdateSupport].Supported,a={openapi:$,info:p(c,W),servers:ne(J),tags:Z(),paths:V(D.entityContainer),components:mt(!!D.entityContainer)};return D.entityContainer||(delete a.servers,delete a.tags),St(a.components,W),At(a,D.entityContainer),a;function p(s,l){let u=s.$EntityContainer&&xe(s.$EntityContainer).qualifier,f=s[u]??{},r=(l[b.Core.LongDescription]||f[b.Core.LongDescription]||P||"This service is located at ["+J+"/]("+J.replace(/\(/g,"%28").replace(/\)/g,"%29")+"/)")+(S?Rt(D,w,he):"");return{title:l[b.Core.Description]||f[b.Core.Description]||d||(s.$EntityContainer?"Service for namespace "+u:"OData CSDL document"),description:s.$EntityContainer?r:"",version:f[b.Core.SchemaVersion]??""}}function ne(s){return[{url:s}]}function Z(){let s=[];for(let[l,u]of D.resources){if(!u.$Type)continue;let f={name:l},r=D.element(u.$Type),m=u[b.Core.Description]||r&&r[b.Core.Description];m&&(f.description=m),s.push(f)}return s}function V(s){let l={};for(let[u,f]of D.resources)w&&!w.includes(u)||(f.$Type?H(l,"/"+u,[],{...f,$ContainsTarget:!0},f,u,u,f,0,""):f.$Action?ge(l,u,f):f.$Function?Ue(l,u,f):R.push("Unrecognized entity container child: "+u));return D.resources.length>0&&ft(l,s),l}function H(s,l,u,f,r,m,E,y,C,k){let U=l.substring(l.lastIndexOf("/")+1),G=D.element(f.$Type),q={},I=ee(r,k),z=se(r,k);s[l]=q,u.length>0&&(q.parameters=u),O(q,f,U,m,E,y,C,I,!1,z),f.$Collection&&(f.$ContainsTarget||C<2&&y)&&ye(q,f,U,m,E,y,C,I),f.$ContainsTarget&&(te(s,l,u,f,m),f.$Collection?C<N&&Y(s,l,u,f,r,m,E,y,C,k,I,z):(e(q,f,U,m,y,C,I),f.$Nullable&&o(q,f,U,m,y,C,I),te(s,l,u,f,m),g(s,l,u,G,r,m,C,k))),Object.keys(q).filter(L=>L!=="parameters").length===0&&delete s[l],f.$Collection&&qe(s,l,u,f,m,y,C,I)}function ee(s,l){return((s[b.Capabilities.NavigationRestrictions]||{}).RestrictedProperties||[]).find(f=>f.NavigationProperty==l)||{}}function se(s,l){let u=s[b.Capabilities.ExpandRestrictions]||{},f=l.length===0?"":l+"/",r=f.length,m=[];for(let E of u.NonExpandableProperties||[])E.startsWith(f)&&m.push(E.substring(r));return m}function Y(s,l,u,f,r,m,E,y,C,k,U,G){let q=y==null||y[b.Capabilities.IndexableByKey]!=!1;if(U.IndexableByKey==!0||U.IndexableByKey!=!1&&q){let I=l.substring(l.lastIndexOf("/")+1),z=D.element(f.$Type),L=oe(z,C);if(L.parameters.length>0){let F=l+L.segment,de=u.concat(L.parameters),ue={parameters:de};s[F]=ue,O(ue,f,I,m,E,y,C,U,!0,G),e(ue,f,I,m,y,C,U),o(ue,f,I,m,y,C,U),Object.keys(ue).filter(Ke=>Ke!=="parameters").length===0&&delete s[F],n(s,F,de,z,I,m),te(s,F,de,f,m,!0),g(s,F,de,z,r,m,C,k)}}}function ye(s,l,u,f,r,m,E,y){let C=y.InsertRestrictions||m&&m[b.Capabilities.InsertRestrictions]||{};if(C.Insertable!==!1){let k=D.element(l.$Type),U=k&&k.$HasStream;s.post={summary:C.Description||"Add new entity to "+(E>0?"related ":"")+u,...C.LongDescription&&{description:C.LongDescription},tags:[f],requestBody:{description:k&&k[b.Core.Description]||(U?"New media resource":"New entity"),required:!0,content:U?{"*/*":{schema:{type:"string",format:"binary"}}}:{"application/json":{schema:me(l.$Type,pe.create)}}},responses:Ne(201,"Created entity",{$Type:l.$Type},C.ErrorResponses)},r&&f!=r&&s.post.tags.push(r),A(s.post,C)}}function O(s,l,u,f,r,m,E,y,C,k){let U=m?.[b.Capabilities.ReadRestrictions],G=y.ReadRestrictions||U||{},q=G.ReadByKeyRestrictions,I=!0;if(C&&q&&q.Readable!==void 0?I=q.Readable:G.Readable!==void 0&&(I=G.Readable),I){let z=(E==0?U:y.ReadRestrictions)||{};C&&(z=z.ReadByKeyRestrictions||{});let L=!C&&l.$Collection,F={summary:z.Description||"Get "+(C?"entity from ":l.$Collection?"entities from ":"")+(E>0?"related ":"")+u+(C?" by key":""),...z.LongDescription&&{description:z.LongDescription},tags:[f],parameters:[],responses:Ne(200,"Retrieved entit"+(L?"ies":"y"),{$Type:l.$Type,$Collection:L},C?q?.ErrorResponses:G?.ErrorResponses)},de=l[b.Capabilities.ChangeTracking]&&l[b.Capabilities.ChangeTracking].Supported;if(L&&de){let ue={type:"string",example:v+"/"+u+"?$deltatoken=opaque server-generated token for fetching the delta"};j&&(ue.examples=[ue.example],delete ue.example),F.responses[200].content["application/json"].schema.properties["@odata.deltaLink"]=ue}m&&f!=r&&F.tags.push(r),A(F,C&&q||G),L&&(t(F.parameters,m,y),i(F.parameters,m,y),c.$Version>="4.0"&&fe(F.parameters,m,y),be(F.parameters,m,y),Ve(F.parameters,m),Te(F.parameters,l,m,y)),Oe(F.parameters,l,m,y),De(F.parameters,l,m,k),L&&X(F.parameters),s.get=F}}function A(s,l){!s.parameters&&(l.CustomHeaders||l.CustomQueryOptions)&&(s.parameters=[]);for(let u of l.CustomHeaders||[])s.parameters.push(K(u,"header"));for(let u of l.CustomQueryOptions||[])s.parameters.push(K(u,"query"))}function K(s,l){let u=Le(s);return u||(u={type:"string"}),s.DocumentationURL&&(u.externalDocs={url:s.DocumentationURL}),{name:s.Name,in:l,required:s.Required||!1,...s.Description&&{description:s.Description},schema:u}}function X(s){ve&&s.push({$ref:"#/components/parameters/apply"})}function Ve(s,l){let u=l&&l[b.Capabilities.CountRestrictions];(l==null||u==null||u.Countable!==!1)&&s.push({$ref:"#/components/parameters/count"})}function De(s,l,u,f){let r=u&&u[b.Capabilities.ExpandRestrictions];if(r==null||r.Expandable!=!1){let E=["*"].concat(Ce(l).filter(y=>!f.includes(y)));E.length>1&&(c.$Version==="2.0"&&E.shift(1),s.push({name:x+"expand",description:r&&r[b.Core.Description]||`Expand related entities, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Expand](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionexpand)"}`,in:"query",explode:!1,schema:{type:"array",uniqueItems:!0,items:{type:"string",enum:E}}}))}}function Ce(s,l="",u=0){let f=[],r=D.element(s.$Type);for(let[m,E]of D.propertiesOfStructuredType(r))E.$Kind=="NavigationProperty"?f.push(l+m):E.$Type&&u<N&&f.push(...Ce(E,l+m+"/",u+1));return f}function be(s,l,u){let f=u.FilterRestrictions||l&&l[b.Capabilities.FilterRestrictions]||{};if(f.Filterable!==!1){let r={name:x+"filter",description:f[b.Core.Description]||`Filter items by property values, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Filtering](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionfilter)"}`,in:"query",schema:{type:"string"}};if(f.RequiresFilter&&(r.required=!0),f.RequiredProperties){r.description+=`
+
+Required filter properties:`;for(let m of f.RequiredProperties)r.description+=`
+- `+m}s.push(r)}}function Te(s,l,u,f){let r=f.SortRestrictions||u&&u[b.Capabilities.SortRestrictions]||{};if(r.Sortable!==!1){let m={};for(let y of r.NonSortableProperties||[])m[y]=!0;let E=[];for(let y of Fe(l))m[y]||(E.push(y),E.push(y+" desc"));E.length>0&&s.push({name:x+"orderby",description:r[b.Core.Description]||`Order items by property values, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Sorting](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionorderby)"}`,in:"query",explode:!1,schema:{type:"array",uniqueItems:!0,items:{type:"string",enum:E}}})}}function Fe(s,l=""){let u=[],f=D.element(s.$Type);if(!f)return R.push(`Unknown type for element: ${JSON.stringify(s)}`),u;let r=D.propertiesOfStructuredType(f),m=r.filter(([,y])=>y.$Kind!=="NavigationProperty"&&y.$Type&&!y.$Type.startsWith("Edm.")&&!D.element(y.$Type));for(let y of m)R.push(`Unknown type for element: ${JSON.stringify(y)}`);let E=r.filter(y=>y[1].$Kind!=="NavigationProperty").filter(y=>!m.includes(y)).map(Re({path:l,typeRefChain:[]}));for(let y=0;y<E.length;y++){let C=E[y];if(!C.isComplex){u.push(C.path);continue}let k=C.typeRefChain[C.typeRefChain.length-1];if(C.typeRefChain.filter(G=>G===k).length>1)continue;let U=Object.entries(C.properties).filter(G=>G[1].$Kind!=="NavigationProperty").map(Re(C));E.splice(y+1,0,...U)}return u}function Re(s){return function(l){let u=l[0],f=l[1],r=f.$Type&&D.element(f.$Type);return r&&r.$Kind&&r.$Kind==="ComplexType"?{properties:D.propertiesMapOfStructuredType(r),path:`${s.path}${u}/`,typeRefChain:s.typeRefChain.concat(f.$Type),isComplex:!0}:{properties:{},path:`${s.path}${u}`,typeRefChain:[],isComplex:!1}}}function fe(s,l,u){let f=u.SearchRestrictions||l&&l[b.Capabilities.SearchRestrictions]||{};f.Searchable!==!1&&(f[b.Core.Description]?s.push({name:x+"search",description:f[b.Core.Description],in:"query",schema:{type:"string"}}):s.push({$ref:"#/components/parameters/search"}))}function Oe(s,l,u,f){if((f.SelectSupport||u&&u[b.Capabilities.SelectSupport]||{}).Supported!==!1){let m=D.element(l.$Type)||{},E=[];for(let[y,C]of D.propertiesOfStructuredType(m))C.$Kind==="NavigationProperty"&&c.$Version!=="2.0"||E.push(y);E.length>0&&s.push({name:x+"select",description:`Select properties to be returned, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Select](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionselect)"}`,in:"query",explode:!1,schema:{type:"array",uniqueItems:!0,items:{type:"string",enum:E}}})}}function i(s,l,u){(Object.keys(u).length>0?u.SkipSupported!==!1:l==null||l[b.Capabilities.SkipSupported]!==!1)&&s.push({$ref:"#/components/parameters/skip"})}function t(s,l,u){(Object.keys(u).length>0?u.TopSupported!==!1:l==null||l[b.Capabilities.TopSupported]!==!1)&&s.push({$ref:"#/components/parameters/top"})}function e(s,l,u,f,r,m,E){let y=E.UpdateRestrictions||r&&r[b.Capabilities.UpdateRestrictions]||{};if(y.Updatable!==!1){let C=D.element(l.$Type),k={summary:y.Description||"Update "+(l.$Collection?"entity in ":"")+(m>0?"related ":"")+u,...y.LongDescription&&{description:y.LongDescription},tags:[f],requestBody:{description:C&&C[b.Core.Description]||"New property values",required:!0,content:{"application/json":{schema:c.$Version==="2.0"?{type:"object",title:"Modified "+xe(l.$Type).name,properties:{d:me(l.$Type,pe.update)}}:me(l.$Type,pe.update)}}},responses:Ne(204,"Success",void 0,y.ErrorResponses)};A(k,y),s[y.UpdateMethod?.toLowerCase()||"patch"]=k}}function o(s,l,u,f,r,m,E){let y=E.DeleteRestrictions||r&&r[b.Capabilities.DeleteRestrictions]||{};y.Deletable!==!1&&(s.delete={summary:y.Description||"Delete "+(l.$Collection?"entity from ":"")+(m>0?"related ":"")+u,...y.LongDescription&&{description:y.LongDescription},tags:[f],responses:Ne(204,"Success",void 0,y.ErrorResponses)},A(s.delete,y))}function n(s,l,u,f,r,m){if(!f.$HasStream)return;let E={parameters:u,get:{summary:`Get media resource from ${r} by key`,tags:[m],responses:{200:{description:"Retrieved media resource",content:{"*/*":{schema:{type:"string",format:"binary"}}}},"4XX":{$ref:"#/components/responses/error"}}}};s[`${l}/$value`]=E}function g(s,l,u,f,r,m,E,y){if(!f||E>=N||ee(r,y).Navigability=="Single")return;let k=r[b.Capabilities.NavigationRestrictions]||{},U=E==0&&k.Navigability!="None"||E==1&&k.Navigability!="Single"||E>1,G=B(f);for(let[q,I]of Object.entries(G)){if(!I.$ContainsTarget&&he&&!he.includes(I.$Type))continue;let z=y+(y.length>0?"/":"")+q,L=ee(r,z);if(["Recursive","Single"].includes(L.Navigability)||L.Navigability==null&&U){let F=r.$NavigationPropertyBinding&&r.$NavigationPropertyBinding[z],de=W[F];H(s,l+"/"+q,u,I,r,m,F,de,E+1,z)}}}function B(s,l={},u="",f=0){for(let[r,m]of D.propertiesOfStructuredType(s))m.$Kind=="NavigationProperty"?l[u+r]=m:m.$Type&&!m.$Collection&&f<N&&B(D.element(m.$Type),l,u+r+"/",f+1);return l}function M(s){let l={};if(s.$Kind=="EntityType"){let u=D.key(s);for(let f of u)typeof f=="string"&&(l[f]=!0)}return l}function oe(s,l){let u="",f=[],r=D.key(s),m=D.propertiesMapOfStructuredType(s);return r.forEach((E,y)=>{let C=l>0?"_"+l:"";ce?u+="/":(y>0&&(u+=","),r.length!=1&&(u+=E+"="));let k,U={};if(typeof E=="string")k=E,U=m[E];else{k=Object.keys(E)[0];let I=E[k].split("/");U=m[I[0]];for(let z=1;z<I.length;z++){let L=D.element(U.$Type);U=D.propertiesMapOfStructuredType(L)[I[z]]}}let G=U.$Type;u+=ie(G)+"{"+k+C+"}"+le(G);let q={description:[U[b.Core.Description],U[b.Core.LongDescription]].filter(I=>I).join(`  
+`)||"key: "+k,in:"path",name:k+C,required:!0,schema:$e(U,"",!0)};f.push(q)}),{segment:(ce?"":"(")+u+(ce?"":")"),parameters:f}}function ie(s){return["Edm.Int64","Edm.Int32","Edm.Int16","Edm.SByte","Edm.Byte","Edm.Decimal","Edm.Double","Edm.Single","Edm.Boolean","Edm.Date","Edm.DateTimeOffset","Edm.TimeOfDay","Edm.Guid"].includes(s)||ce?"":"'"}function le(s){return["Edm.Int64","Edm.Int32","Edm.Int16","Edm.SByte","Edm.Byte","Edm.Decimal","Edm.Double","Edm.Single","Edm.Boolean","Edm.Date","Edm.DateTimeOffset","Edm.TimeOfDay","Edm.Guid"].includes(s)||ce?"":"'"}function te(s,l,u,f,r,m=!1){let E=D.boundOverloads[f.$Type+(!m&&f.$Collection?"-c":"")]||[];for(let y of E)y.overload.$Kind=="Action"?Be(s,l+"/"+y.name,u,y.name,y.overload,r):Pe(s,l+"/"+y.name,u,y.name,y.overload,r)}function ge(s,l,u){let f=D.element(u.$Action);if(!Array.isArray(f)){R.push(`Unknown action ${u.$Action} in action import ${l}`);return}let r=f.find(m=>!m.$IsBound);Be(s,"/"+l,[],u.$Action,r,u.$EntitySet,u)}function Be(s,l,u,f,r,m,E={}){let y=f.indexOf(".")===-1?f:xe(f).name,C=E[b.Core.LongDescription]||r[b.Core.LongDescription],k={post:{summary:E[b.Core.Description]||r[b.Core.Description]||"Invoke action "+y,...C&&{description:C},tags:[m||"Service Operations"],responses:r.$ReturnType?Ne(200,"Success",Ge(r.$ReturnType),r[b.Capabilities.OperationRestrictions]?.ErrorResponses):Ne(204,"Success",void 0,r[b.Capabilities.OperationRestrictions]?.ErrorResponses)}};u.length>0&&(k.post.parameters=[...u]);let U=r.$Parameter||[];if(r.$IsBound&&(U=U.slice(1)),U.length>0){let G={};for(let q of U)G[q.$Name]=$e(q);k.post.requestBody={description:"Action parameters",content:{"application/json":{schema:{type:"object",properties:G}}}}}A(k.post,r[b.Capabilities.OperationRestrictions]||{}),s[l]=k}function Ue(s,l,u){let f=D.element(u.$Function);if(!Array.isArray(f)){R.push(`Unknown function ${u.$Function} in function import ${l}`);return}for(let r of f)r.$IsBound||Pe(s,"/"+l,[],u.$Function,r,u.$EntitySet,u)}function Pe(s,l,u,f,r,m,E={}){let y=f.indexOf(".")===-1?f:xe(f).name,C=r.$Parameter||[];r.$IsBound&&(C=C.slice(1));let k=[],U=[],G=c.$Version>"4.0"||c.$Version==="2.0"||C.some(L=>L[b.Core.OptionalParameter]);for(let L of C){let F={required:G?!L[b.Core.OptionalParameter]:!0},de=[L[b.Core.Description],L[b.Core.LongDescription]].filter(Ke=>Ke).join(`  
+`);de&&(F.description=de);let ue=D.element(L.$Type||"Edm.String");L.$Collection||L.$Type=="Edm.Stream"||["ComplexType","EntityType"].includes(ue?.$Kind)||ue?.$UnderlyingType=="Edm.Stream"?(F.in="query",G&&c.$Version!=="2.0"&&at.includes(L.$Name.toLowerCase())?F.name="@"+L.$Name:G?F.name=L.$Name:(k.push(L.$Name+"=@"+L.$Name),F.name="@"+L.$Name),F.schema=Le(L)||ue&&Le(ue),F.schema||(F.schema={type:"string"}),de?F.description+=`  
+`:F.description="",F.description+="This is "+(L.$Collection?"a ":"")+"URL-encoded JSON "+(L.$Collection?"array with items ":"")+"of type "+D.namespaceQualifiedName(L.$Type||"Edm.String")+", see [Complex and Collection Literals](https://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part2-url-conventions.html#sec_ComplexandCollectionLiterals)",F.example=L.$Collection?"[]":"{}"):(G?F.in="query":(k.push(L.$Name+"={"+L.$Name+"}"),F.in="path"),G&&c.$Version!=="2.0"&&at.includes(L.$Name.toLowerCase())?F.name="@"+L.$Name:F.name=L.$Name,(!L.$Type||L.$Type==="Edm.String"||ue?.$UnderlyingType==="Edm.String")&&(de?F.description+=`  
+`:F.description="",F.description+="String value needs to be enclosed in single quotes"),F.schema=$e(L,"",!0,!0)),U.push(F)}let q=G?"":"("+k.join(",")+")",I=E[b.Core.LongDescription]||r[b.Core.LongDescription],z={get:{summary:E[b.Core.Description]||r[b.Core.Description]||"Invoke function "+y,...I&&{description:I},tags:[m||"Service Operations"],parameters:u.concat(U),responses:Ne(200,"Success",Ge(r.$ReturnType),r[b.Capabilities.OperationRestrictions]?.ErrorResponses)}};A(z.get,r[b.Capabilities.OperationRestrictions]||{}),s[l+q]=z}function qe(s,l,u,f,r,m,E,y){let C=l.substring(l.lastIndexOf("/")+1),k=l+"/$filter({filter_expression})/$each",G={parameters:[...u,{name:"filter_expression",in:"path",required:!0,description:"Filter expression using the [Common Expression Syntax](https://docs.oasis-open.org/odata/odata/v4.01/os/part2-url-conventions/odata-v4.01-os-part2-url-conventions.html#sec_CommonExpressionSyntax)",schema:{type:"string"}}]},q=y.DeleteRestrictions||m&&m[b.Capabilities.DeleteRestrictions]||{},I=y.UpdateRestrictions||m&&m[b.Capabilities.UpdateRestrictions]||{};if((q.FilterSegmentSupported||I.FilterSegmentSupported)&&(s[k]=G),I.FilterSegmentSupported){let z=D.element(f.$Type);G.patch={summary:"Update entities matching the filter expression in "+(E>0?"related ":"")+C,description:"See [Update Members of a Collection](https://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_UpdateMembersofaCollection)",tags:[r],requestBody:{description:z&&z[b.Core.Description]||"New property values",required:!0,content:{"application/json":{schema:me(f.$Type,pe.update)}}},responses:Ne(204,"Success",void 0,I.ErrorResponses)},A(G.patch,I)}q.FilterSegmentSupported&&(G.delete={summary:"Delete entities matching the filter expression from "+(E>0?"related ":"")+C,description:"See [Delete Members of a Collection](https://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_DeleteMembersofaCollection)",tags:[r],responses:Ne(204,"Success",void 0,q.ErrorResponses)},A(G.delete,q))}function ft(s,l){if(w)return;let u=l[b.Capabilities.BatchSupport]||{};if(!(_?!1:l[b.Capabilities.BatchSupported]!==!1&&u.Supported!==!1))return;let r=D.resources.filter(([,m])=>m.$Collection)[0]?.[0];s["/$batch"]={post:{summary:u[b.Core.Description]||"Send a group of requests",description:(u[b.Core.LongDescription]||"Group multiple requests into a single request payload, see "+(c.$Version==="2.0"?"[Batch Processing (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/batch-processing/).":"[Batch Requests](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_BatchRequests)."))+`
+
+*Please note that "Try it out" is not supported for this request.*`,tags:["Batch Requests"],requestBody:{required:!0,description:"Batch request",content:{"multipart/mixed;boundary=request-separator":{schema:{type:"string"},example:`--request-separator
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+
+GET `+r+` HTTP/1.1
+Accept: application/json
+
+
+--request-separator--`}}},responses:{"4XX":{$ref:"#/components/responses/error"}}}},s["/$batch"].post.responses[c.$Version<"4.0"?202:200]={description:"Batch response",content:{"multipart/mixed":{schema:{type:"string"},example:`--response-separator
+Content-Type: application/http
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{...}
+--response-separator--`}}}}function Ne(s,l,u,f){let r={};if(r[s]={description:l},s!=204){let m=$e(u);u.$Collection?m={type:"object",title:"Collection of "+xe(u.$Type||"Edm.String").name,properties:c.$Version==="2.0"?{__count:me("count"),results:m}:{[c.$Version>"4.0"?"@count":"@odata.count"]:me("count"),value:m}}:(u.$Type===void 0||u.$Type.startsWith("Edm.")&&!["Edm.Stream","Edm.EntityType","Edm.ComplexType"].includes(u.$Type))&&(m={type:"object",properties:{value:m}}),c.$Version==="2.0"&&(m={type:"object",title:u.$Collection?"Wrapper":xe(u.$Type).name,properties:{d:m}}),r[s].content={"application/json":{schema:m}}}if(f)for(let m of f)r[m.StatusCode]={description:m.Description,content:{"application/json":{schema:{$ref:"#/components/schemas/error"}}}};else r["4XX"]={$ref:"#/components/responses/error"};return r}function mt(s){let l={schemas:dt(s)};return s&&(l.parameters=Tt(),l.responses={error:{description:"Error",content:{"application/json":{schema:me("error")}}}}),l}function dt(s){let l={};for(let f of Q.list){let r=D.element(`${f.namespace}.${f.name}`);if(r)switch(r.$Kind){case"ComplexType":case"EntityType":gt(l,f.namespace,f.name,r,f.suffix);break;case"EnumType":ht(l,f.namespace,f.name,r);break;case"TypeDefinition":bt(l,f.namespace,f.name,r);break}}let u={};for(let f of Object.keys(l).sort())u[f]=l[f];return yt(u),s&&(u.count=Et(),Q.entityReferenceNeeded&&(u.entityReference=vt()),u.error=$t()),u}function yt(s){ae.geoPoint&&(s.geoPoint={type:"object",properties:{coordinates:me("geoPosition"),type:{type:"string",enum:["Point"],default:"Point"}},required:["type","coordinates"]},s.geoPosition={type:"array",minItems:2,items:{type:"number"}})}function ht(s,l,u,f){let r=D.enumTypeMembers(f).map(([y])=>y),m={type:"string",title:f[b.Core.Description]||u,enum:r},E=f[b.Core.LongDescription];E&&(m.description=E),s[l+"."+u]=m}function bt(s,l,u,f){let r=$e(Object.assign({$Type:f.$UnderlyingType},f));r.title=f[b.Core.Description]||u;let m=f[b.Core.LongDescription];m&&(r.description=m),s[l+"."+u]=r}function gt(s,l,u,f,r){let m=l+"."+u+r,E=l+"."+u,y=M(f),C=Object.keys(y),k={};for(let[q,I]of D.propertiesOfStructuredType(f))if(I.$Kind==="NavigationProperty"&&!I.$ContainsTarget&&(I=Ge(I)),r===pe.read&&(k[q]=$e(I)),I.$Kind==="NavigationProperty")I.$Collection&&r===pe.read&&(c.$Version==="2.0"?k[q]={type:"object",properties:{results:k[q]}}:k[`${q}@${c.$Version==="4.0"?"odata.":""}count`]=me("count")),I[b.Core.Permissions]!="Read"&&(I.$ContainsTarget?(r===pe.create&&(k[q]=$e(I,pe.create)),r===pe.update&&re&&(k[q]=$e(I,pe.create))):!I.$Collection&&!I.$ReferentialConstraint&&!I.$Nullable&&r===pe.create&&(k[`${q}${c.$Version==="4.0"?"@odata.bind":""}`]=me("entityReference"),Q.entityReferenceNeeded=!0));else{if(I[b.Core.Permissions]=="Read"||I[b.Core.Computed]||I[b.Core.ComputedDefaultValue]){let z=C.indexOf(q);z!=-1&&C.splice(z,1)}if(I[b.Core.Permissions]=="Read"||I[b.Core.Computed])continue;r===pe.create&&(k[q]=$e(I,pe.create)),r===pe.update&&!y[q]&&!I[b.Core.Immutable]&&(k[q]=$e(I,pe.update))}let U=f[b.Core.LongDescription];s[m]={title:(f[b.Core.Description]||u)+Pt[r],...U&&{description:U},type:"object"},Object.keys(k).length>0&&(s[m].properties=k),r===pe.create&&C.length>0&&(s[m].required=C);let G=D.derivedTypes[E];if(G){s[m].anyOf=[];for(let q of G)s[m].anyOf.push(me(q,r));f.$Abstract||s[m].anyOf.push({})}}function Ge(s){if(he&&!he.includes(s?.$Type)){let l={...s};return l.$Type=`stub-${s.$Type}`,l}else return s}function Tt(){let s={top:{name:x+"top",in:"query",description:`Show only the first n items, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Paging - Top](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptiontop)"}`,schema:{type:"integer",minimum:0},example:50},skip:{name:x+"skip",in:"query",description:`Skip the first n items, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Paging - Skip](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionskip)"}`,schema:{type:"integer",minimum:0}},count:{name:c.$Version==="2.0"?"$inlinecount":x+"count",in:"query",description:`Include count of items, see ${c.$Version==="2.0"?"[URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)":"[Count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount)"}`,schema:c.$Version==="2.0"?{type:"string",enum:["allpages","none"]}:{type:"boolean"}}};return c.$Version>="4.0"&&(s.search={name:x+"search",in:"query",description:"Search items by search phrases, see [Searching](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptionsearch)",schema:{type:"string"}}),ve&&(s.apply={name:x+"apply",in:"query",description:"Apply basic grouping and aggregation functionality, see [Aggregation](http://docs.oasis-open.org/odata/odata-data-aggregation-ext/v4.0/odata-data-aggregation-ext-v4.0.html)",schema:{type:"string"}}),s}function $t(){let s={type:"object",required:["error"],properties:{error:{type:"object",required:["code","message"],properties:{code:{type:"string"},message:{type:"string"},target:{type:"string"},details:{type:"array",items:{type:"object",required:["code","message"],properties:{code:{type:"string"},message:{type:"string"},target:{type:"string"}}}},innererror:{type:"object",description:"The structure of this object is service-specific"}}}}};return c.$Version<"4.0"&&(s.properties.error.properties.message={type:"object",properties:{lang:{type:"string"},value:{type:"string"}},required:["lang","value"]},delete s.properties.error.properties.details,delete s.properties.error.properties.target),s}function Et(){return c.$Version==="2.0"?{type:"string",description:"The number of entities in the collection. Available when using the $inlinecount query option, see [URI Conventions (OData Version 2.0)](https://www.odata.org/documentation/odata-version-2-0/uri-conventions/)."}:{anyOf:[{type:"integer",minimum:0},{type:"string"}],description:"The number of entities in the collection. Available when using the [$count](http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_SystemQueryOptioncount) query option."}}function vt(){let s={type:"string",format:"uri",description:"[Link to a related entity](https://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#sec_LinktoRelatedEntitiesWhenCreatinganE)"};return c.$Version==="4.0"?s:{type:"object",properties:{"@id":s}}}function $e(s,l="",u=!1,f=!1){let r={};switch(s.$Type){case"Edm.AnnotationPath":case"Edm.ModelElementPath":case"Edm.NavigationPropertyPath":case"Edm.PropertyPath":r.type="string";break;case"Edm.Binary":r=j?{type:"string",contentEncoding:c.$Version<"4.0"?"base64":"base64url"}:{type:"string",format:c.$Version<"4.0"?"byte":"base64url"},s.$MaxLength&&(r.maxLength=Math.ceil(4*s.$MaxLength/3));break;case"Edm.Boolean":r.type="boolean";break;case"Edm.Byte":r={type:"integer",format:"uint8"};break;case"Edm.Date":r={type:"string",format:"date",example:"2017-04-13"};break;case"Edm.DateTime":case"Edm.DateTimeOffset":r=c.$Version==="2.0"?{type:"string",example:"/Date(1492098664000)/"}:{type:"string",format:"date-time",example:"2017-04-13T15:51:04"+(isNaN(s.$Precision)||s.$Precision===0?"":"."+"0".repeat(s.$Precision))+"Z"};break;case"Edm.Decimal":{if(r=c.$Version==="2.0"?{type:"string",format:"decimal",example:"0"}:{...!j&&{anyOf:[{type:"number"},{type:"string"}]},...j&&{type:["number","string"]},format:"decimal",example:0},s.$Precision===34&&s.$Scale==="floating")r.format="decimal128",r.example="9.9e6144";else{let m=isNaN(s.$Scale)?null:s.$Scale;if(m!==null&&(r.multipleOf=1/10**m,s.$Precision<16)){let E=10**(s.$Precision-m),y=10**-m;r.maximum=E-y,r.minimum=-r.maximum}}break}case"Edm.Double":r={type:"number",format:"double",example:3.14};break;case"Edm.Duration":r={type:"string",format:"duration",example:"P4DT15H51M04S"};break;case"Edm.GeographyPoint":case"Edm.GeometryPoint":r=me("geoPoint"),ae.geoPoint=!0;break;case"Edm.Guid":r={type:"string",format:"uuid",example:"01234567-89ab-cdef-0123-456789abcdef"};break;case"Edm.Int16":r={type:"integer",format:"int16"};break;case"Edm.Int32":r={type:"integer",format:"int32"};break;case"Edm.Int64":r={...!j&&{anyOf:[{type:"integer"},{type:"string"}]},...j&&{type:["integer","string"]},format:"int64",example:"42"};break;case"Edm.PrimitiveType":r={...!j&&{anyOf:[{type:"boolean"},{type:"number"},{type:"string"}]},...j&&{type:["boolean","number","string"]}};break;case"Edm.SByte":r={type:"integer",format:"int8"};break;case"Edm.Single":r={type:"number",format:"float",example:3.14};break;case"Edm.Stream":{r=Le(s),r||(r=j?{type:"string",contentEncoding:"base64url"}:{type:"string",format:"base64url"});break}case"Edm.String":case void 0:r.type="string",s.$MaxLength&&(r.maxLength=s.$MaxLength),Ct(r,s);break;case"Edm.Time":r={type:"string",example:"PT15H51M04"+(isNaN(s.$Precision)||s.$Precision===0?"":"."+"0".repeat(s.$Precision))+"S"};break;case"Edm.TimeOfDay":r={type:"string",format:"time",example:"15:51:04"};break;default:if(s.$Type.startsWith("stub-"))r={type:"object",description:`Stub for ${s.$Type.substring(5)}`};else if(s.$Type.startsWith("Edm."))R.push("Unknown type: "+s.$Type);else{let m=D.element(s.$Type),E=m&&["ComplexType","EntityType"].includes(m.$Kind);r=me(s.$Type,E?l:""),s.$MaxLength&&(r={allOf:[r],maxLength:s.$MaxLength})}}if(Nt(r,s),s.$Nullable&&(j?r.$ref?r={anyOf:[r,{type:"null"}]}:Array.isArray(r.type)?r.type.push("null"):r.type=[r.type,"null"]:(r.$ref&&(r={allOf:[r]}),r.nullable=!0)),s.$DefaultValue!==void 0&&(r.$ref&&(r={allOf:[r]}),r.default=s.$DefaultValue),s[b.Core.Example]&&(r.$ref&&(r={allOf:[r]}),r.example=s[b.Core.Example].Value),f){if(r.example&&typeof r.example=="string"&&(r.example=`${ie(s.$Type)}${r.example}${le(s.$Type)}`),r.pattern){let m=ie(s.$Type),E=le(s.$Type);r.pattern=r.pattern.replace(/^\^/,`^${m}(`),r.pattern=r.pattern.replace(/\$$/,`)${E}$`)}else(!s.$Type||s.$Type==="Edm.String")&&(r.pattern="^'([^']|'')*'$");s.$Nullable&&(r.default="null",r.pattern&&(r.pattern=r.pattern.replace(/^\^/,"^(null|"),r.pattern=r.pattern.replace(/\$$/,")$")))}return j&&r.example!==void 0&&(r.examples=[r.example],delete r.example),typeof s[b.Validation.Maximum]=="number"&&(r.$ref&&(r={allOf:[r]}),r.maximum=s[b.Validation.Maximum],s[b.Validation.Maximum+b.Validation.Exclusive]&&(r.exclusiveMaximum=j?r.maximum:!0,j&&delete r.maximum)),typeof s[b.Validation.Minimum]=="number"&&(r.$ref&&(r={allOf:[r]}),r.minimum=s[b.Validation.Minimum],s[b.Validation.Minimum+b.Validation.Exclusive]&&(r.exclusiveMinimum=j?r.minimum:!0,j&&delete r.minimum)),s.$Collection&&(r={type:"array",items:r}),!u&&s[b.Core.Description]&&(r.$ref&&(r={allOf:[r]}),r.title=s[b.Core.Description]),!u&&s[b.Core.LongDescription]&&(r.$ref&&(r={allOf:[r]}),r.description=s[b.Core.LongDescription]),r}function Nt(s,l){let u=l[b.Validation.AllowedValues];u&&(s.enum=u.map(f=>f.Value))}function Ct(s,l){let u=l[b.Validation.Pattern];u&&(s.pattern=u)}function Le(s){let l=s[b.JSON.Schema];if(l)return typeof l=="string"?JSON.parse(l):l}function me(s,l=""){let u=s,f="",r="";if(s.indexOf(".")!=-1){let m=xe(s);f=D.namespace[m.qualifier],u=f+"."+m.name,r=D.namespaceUrl[f]||"",r===""&&!Q.used[u+l]&&(Q.used[u+l]=!0,Q.list.push({namespace:f,name:m.name,suffix:l})),r.endsWith(".xml")&&(r=r.substring(0,r.length-3)+"openapi3.json")}return{$ref:r+"#/components/schemas/"+u+l}}function St(s,l){let u=l?.[b.Authorization.Authorizations]||[],f={},r={Header:"header",QueryOption:"query",Cookie:"cookie"};for(let m of u){let E={},y={};m.Description&&(E.description=m.Description);let C=m["@type"]||m["@odata.type"],k=C.substring(C.lastIndexOf(".")+1),U=!1;switch(k){case"ApiKey":E.type="apiKey",E.name=m.KeyName,E.in=r[m.Location];break;case"Http":E.type="http",E.scheme=m.Scheme,E.bearerFormat=m.BearerFormat;break;case"OAuth2AuthCode":E.type="oauth2",E.flows={authorizationCode:y},y.authorizationUrl=m.AuthorizationUrl,y.tokenUrl=m.TokenUrl,m.RefreshUrl&&(y.refreshUrl=m.RefreshUrl),y.scopes=Me(m);break;case"OAuth2ClientCredentials":E.type="oauth2",E.flows={clientCredentials:y},y.tokenUrl=m.TokenUrl,m.RefreshUrl&&(y.refreshUrl=m.RefreshUrl),y.scopes=Me(m);break;case"OAuth2Implicit":E.type="oauth2",E.flows={implicit:y},y.authorizationUrl=m.AuthorizationUrl,m.RefreshUrl&&(y.refreshUrl=m.RefreshUrl),y.scopes=Me(m);break;case"OAuth2Password":E.type="oauth2",E.flows={},E.flows={password:y},y.tokenUrl=m.TokenUrl,m.RefreshUrl&&(y.refreshUrl=m.RefreshUrl),y.scopes=Me(m);break;case"OpenIDConnect":E.type="openIdConnect",E.openIdConnectUrl=m.IssuerUrl;break;default:U=!0,R.push("Unknown Authorization type "+C)}U||(f[m.Name]=E)}Object.keys(f).length>0&&(s.securitySchemes=f)}function Me(s){let l={};for(let u of s.Scopes)l[u.Scope]=u.Description;return l}function At(s,l){let u=l?.[b.Authorization.SecuritySchemes]||[];u.length>0&&(s.security=[]);for(let f of u){let r={};r[f.Authorization]=f.RequiredScopes||[],s.security.push(r)}}}});var ut=Se((zt,lt)=>{"use strict";var{xml2json:ct}=et(),{csdl2openapi:kt}=st(),_t=["get","post","put","patch","delete"],wt="https://schema.getpostman.com/json/collection/v2.1.0/collection.json";function Vt(c){let h=ct(c),T=Object.keys(h).find(_=>!_.startsWith("$"))||"Service",v=h.$EntityContainer?h.$EntityContainer.split(".").reduce((_,d)=>_&&_[d],h):null,S=v?Object.keys(v).filter(_=>!_.startsWith("$")&&!_.startsWith("@")&&v[_].$Collection):[],$=/xmlns:sap=/.test(c),N="",R=c.match(/<(?:atom:)?link\b[^>]*\brel="self"[^>]*\bhref="([^"]+)"/);return R&&(N=R[1].replace(/^[a-z]+:\/\/[^/]+/i,"").replace(/\/\$metadata.*$/,"").replace(/\/+$/,"")),N||(N=$?"/sap/opu/odata/sap/"+T:"/odata"),{version:h.$Version||"4.0",namespace:T,entitySets:S,basePath:N,isSap:$}}function Ft(c,h={}){let T=[],v=ct(c,{messages:T});return{openapi:kt(v,{scheme:h.scheme||"https",host:h.host||"{{host}}",basePath:h.basePath||"/service-root",skipBatchPath:!!h.skipBatch,messages:T}),messages:T.map(String)}}function Ie(c,h){let T=h,v=0;for(;T&&T.$ref&&v++<20;)T=T.$ref.replace(/^#\//,"").split("/").reduce((S,$)=>S&&S[$.replace(/~1/g,"/").replace(/~0/g,"~")],c);return T}function we(c,h,T=0){let v=Ie(c,h);if(!v)return;if(v.example!==void 0)return v.example;if(v.allOf){let $=v.allOf.map(R=>we(c,R,T)),N=$.filter(R=>R&&typeof R=="object"&&!Array.isArray(R));return N.length?Object.assign({},...N):$[0]}let S=v.anyOf||v.oneOf;if(S){for(let $ of S){let N=we(c,$,T);if(N!=null)return N}return}if(v.enum)return v.enum[0];switch(v.type){case"object":{if(T>2)return;let $={};for(let[N,R]of Object.entries(v.properties||{})){let _=Ie(c,R)||{},d=_.type==="object"||_.type==="array"||_.allOf||_.anyOf||_.oneOf,P=N==="results"||N==="d"?T:T+1;if(d&&P>2)continue;let w=we(c,R,d?P:T);w!==void 0&&($[N]=w)}return $}case"array":{let $=we(c,v.items,T);return $===void 0?[]:[$]}case"integer":case"number":return 0;case"boolean":return!1;case"string":return"";default:return}}function Bt(c,h,T){let v=h&&h.$ref;if(!v||!/-create$/.test(v)||!T||typeof T!="object")return T;let S=Ie(c,{$ref:v.replace(/-create$/,"")});for(let[$,N]of Object.entries(S&&S.properties||{})){let R=Ie(c,N)||{},_=R.properties&&R.properties.results&&R.properties.results.items;if(!_||!_.$ref||$ in T)continue;let d={$ref:_.$ref+"-create"},P=we(c,Ie(c,d)?d:_,2);P&&typeof P=="object"&&(T[$]={results:[P]})}return T}function ot(c){if(c.example!==void 0)return String(c.example);let h=c.schema||{};return h.example!==void 0?String(h.example):typeof h.pattern=="string"&&h.pattern.startsWith("^'")?"''":h.type==="array"&&h.items&&h.items.enum?h.items.enum.filter(v=>!/ desc$/.test(v)).slice(0,c.name==="$select"?3:1).join(","):h.enum?String(h.enum[0]):h.type==="integer"||h.type==="number"?"0":""}function _e(c){return String(c||"").replace(/\[([^\]]+)\]\([^)]+\)/g,"$1")}function Ut(c,h){let T=["// L\u1EA5y CSRF token tr\u01B0\u1EDBc m\u1ED7i request ghi (POST/PUT/PATCH/DELETE).","// SAP Gateway t\u1EEB ch\u1ED1i request ghi n\u1EBFu thi\u1EBFu header x-csrf-token.","if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {","    const headers = { 'x-csrf-token': 'Fetch', 'Accept': 'application/json' };"];return c==="basic"?T.push("    const user = pm.variables.get('username');","    if (user) {","        headers['Authorization'] = 'Basic ' + btoa(user + ':' + (pm.variables.get('password') || ''));","    }"):c==="bearer"&&T.push("    const token = pm.variables.get('token');","    if (token) { headers['Authorization'] = 'Bearer ' + token; }"),T.push("    pm.sendRequest({","        url: pm.variables.replaceIn('{{baseUrl}}') + '/"+(h?"?sap-client="+encodeURIComponent(h):"")+"',","        method: 'GET',","        header: headers","    }, function (err, res) {","        if (err) { console.error('Kh\xF4ng l\u1EA5y \u0111\u01B0\u1EE3c CSRF token', err); return; }","        const csrf = res.headers.get('x-csrf-token');","        if (csrf) { pm.request.headers.upsert({ key: 'x-csrf-token', value: csrf }); }","    });","}"),T}function qt(c,h={}){let T=h.auth||"basic",v=(h.sapClient||"").trim(),S=c.servers&&c.servers[0]&&c.servers[0].url||"",$=new Set,N=new Map,R=new Map((c.tags||[]).map(x=>[x.name,x]));for(let x of R.keys())N.set(x,[]);for(let[x,ae]of Object.entries(c.paths||{}))for(let j of _t){let Q=ae[j];if(!Q)continue;let D=[...ae.parameters||[],...Q.parameters||[]].map(V=>Ie(c,V)),he=j!=="get",b=x==="/$batch",W=x.replace(/\{([^}]+)\}/g,(V,H)=>($.add(H),"{{"+H+"}}")),ce=[];v&&ce.push({key:"sap-client",value:v});for(let V of D.filter(H=>H&&H.in==="query")){let H={key:V.name,value:ot(V)};V.description&&(H.description=_e(V.description));let ee=V.required||V.name==="$top"&&h.top;V.name==="$top"&&h.top&&(H.value=String(h.top)),ee||(H.disabled=!0),ce.push(H)}let ve=ce.filter(V=>!V.disabled).map(V=>V.key+"="+V.value).join("&"),re=[];b||re.push({key:"Accept",value:"application/json"});for(let V of D.filter(H=>H&&H.in==="header"))re.push({key:V.name,value:ot(V),description:_e(V.description),disabled:!V.required});let a={method:j.toUpperCase(),header:re},p=_e(Q.description||""),ne=Q.requestBody&&Ie(c,Q.requestBody).content;if(ne){let V=Object.keys(ne)[0];if(re.push({key:"Content-Type",value:V}),/json/.test(V)){let H=ne[V].schema,ee=we(c,H),se=ee;if(j==="post"&&h.deepInsert&&(se=Bt(c,H,ee)),j==="patch"||j==="put"){let Y=ee&&ee.d&&typeof ee.d=="object"?ee.d:ee,ye=Object.keys(Y||{});se=ee&&ee.d?{d:{}}:{},ye.length&&(p+=(p?`
+
+`:"")+"C\xE1c field c\xF3 th\u1EC3 c\u1EADp nh\u1EADt: "+ye.join(", "))}a.body={mode:"raw",raw:JSON.stringify(se===void 0?{}:se,null,2),options:{raw:{language:"json"}}}}else{let H=ne[V].example;a.body={mode:"raw",raw:typeof H=="string"?H.replace(/\r?\n/g,`\r
+`):""}}}he&&j!=="post"&&!b&&re.push({key:"If-Match",value:"*",description:"B\u1EADt l\xEAn n\u1EBFu entity d\xF9ng ETag",disabled:!0}),a.url={raw:"{{baseUrl}}"+W+(ve?"?"+ve:""),host:["{{baseUrl}}"],path:W.split("/").filter(Boolean)},ce.length&&(a.url.query=ce),p&&(a.description=p);let Z=Q.tags&&Q.tags[0]||"Kh\xE1c";N.has(Z)||N.set(Z,[]),N.get(Z).push({name:_e(Q.summary)||j.toUpperCase()+" "+x,request:a,response:[]})}let _=[];for(let[x,ae]of N){if(!ae.length)continue;let j={name:x,item:ae},Q=R.get(x);Q&&Q.description&&(j.description=_e(Q.description)),_.push(j)}let d=[{key:"baseUrl",value:S}],P=new Set(["baseUrl"]),w=(x,ae)=>{P.has(x)||(P.add(x),d.push({key:x,value:ae}))};for(let x of S.matchAll(/\{\{([^}]+)\}\}/g))w(x[1],"");T==="basic"?(w("username",""),w("password","")):T==="bearer"&&w("token","");for(let x of $)w(x,"");let J={info:{name:h.name||c.info&&c.info.title||"OData service",description:_e(c.info&&c.info.description),schema:wt},item:_,variable:d};return T==="basic"?J.auth={type:"basic",basic:[{key:"username",value:"{{username}}",type:"string"},{key:"password",value:"{{password}}",type:"string"}]}:T==="bearer"&&(J.auth={type:"bearer",bearer:[{key:"token",value:"{{token}}",type:"string"}]}),h.csrf&&(J.event=[{listen:"prerequest",script:{type:"text/javascript",exec:Ut(T,v)}}]),J}function Lt(c){return c.item.map(h=>{let T={};for(let v of h.item)T[v.request.method]=(T[v.request.method]||0)+1;return{name:h.name,description:h.description||"",counts:T,total:h.item.length}})}lt.exports={inspect:Vt,toOpenApi:Ft,toPostman:qt,summarize:Lt}});var Mt=Se((Jt,pt)=>{pt.exports=ut()});return Mt();})();
+/*! Bundled license information:
+
+sax/lib/sax.js:
+  (*! http://mths.be/fromcodepoint v0.1.0 by @mathias *)
+*/
+</script>
+<script>
+(function () {
+  "use strict";
+  var T = window.EdmxTool;
+  var $ = function (id) { return document.getElementById(id); };
+  var METHOD_ORDER = ["GET", "POST", "PATCH", "PUT", "DELETE"];
+  var state = { xml: "", fileName: "", size: 0, isSample: false, info: null, out: null };
+
+  // The downloads capability only exists inside the Claude viewer; anywhere else
+  // (a saved copy opened from disk) a plain blob link does the job.
+  var downloadsReady = window.claude && typeof window.claude.use === "function"
+    ? window.claude.use("downloads").catch(function () { return null; })
+    : Promise.resolve(null);
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function fmtSize(bytes) {
+    return bytes < 1024 ? bytes + " B" : Math.round(bytes / 1024).toLocaleString("vi-VN") + " KB";
+  }
+
+  function options() {
+    var basePath = $("opt-basepath").value.trim().replace(/\/+$/, "");
+    if (basePath && basePath[0] !== "/") basePath = "/" + basePath;
+    return {
+      scheme: $("opt-scheme").value,
+      host: $("opt-host").value.trim() || "{{host}}",
+      basePath: basePath,
+      sapClient: $("opt-client").value.trim(),
+      name: $("opt-name").value.trim() || (state.info && state.info.namespace) || "OData service",
+      auth: $("opt-auth").value,
+      csrf: $("opt-csrf").checked,
+      top: $("opt-top").checked ? 50 : 0,
+      deepInsert: $("opt-deep").checked,
+      skipBatch: $("opt-batch").checked
+    };
+  }
+
+  function showError(message) {
+    state.out = null;
+    $("error-text").textContent = message;
+    $("error").hidden = false;
+    $("ok").hidden = true;
+  }
+
+  function setStatus(text) { $("status").textContent = text || ""; }
+
+  function load(xml, fileName, size, isSample) {
+    state.xml = xml;
+    state.fileName = fileName;
+    state.size = size;
+    state.isSample = isSample;
+    $("cur-name").textContent = fileName;
+    $("cur-size").textContent = fmtSize(size);
+    $("cur-sample").hidden = !isSample;
+    $("fallback").hidden = true;
+    setStatus("");
+    try {
+      state.info = T.inspect(xml);
+    } catch (e) {
+      state.info = null;
+      showError(String((e && e.message) || e).split(String.fromCharCode(10))[0]);
+      return;
+    }
+    $("opt-basepath").value = state.info.basePath;
+    $("opt-name").value = state.info.namespace;
+    render();
+  }
+
+  function render() {
+    if (!state.info) return;
+    var o = options();
+    var out;
+    try {
+      var r = T.toOpenApi(state.xml, o);
+      out = { openapi: r.openapi, messages: r.messages, collection: T.toPostman(r.openapi, o), name: o.name };
+    } catch (e) {
+      showError(String((e && e.message) || e).split(String.fromCharCode(10))[0]);
+      return;
+    }
+    state.out = out;
+    $("error").hidden = true;
+    $("ok").hidden = false;
+
+    var rows = T.summarize(out.collection);
+    var total = rows.reduce(function (n, r) { return n + r.total; }, 0);
+    $("r-name").textContent = o.name;
+    $("r-server").textContent = out.openapi.servers[0].url;
+
+    var meta = $("r-meta");
+    meta.replaceChildren();
+    [
+      ["OData", "V" + String(state.info.version).replace(/\.0$/, "")],
+      ["entity set", state.info.entitySets.length],
+      ["thư mục", rows.length],
+      ["request", total]
+    ].forEach(function (pair, i) {
+      var s = el("span");
+      if (i === 0) { s.append(pair[0] + " ", el("b", "", pair[1])); }
+      else { s.append(el("b", "", String(pair[1])), " " + pair[0]); }
+      meta.append(s);
+    });
+
+    var used = METHOD_ORDER.filter(function (m) {
+      return rows.some(function (r) { return r.counts[m]; });
+    });
+    var head = el("tr");
+    head.append(el("th", "", "THƯ MỤC"));
+    used.forEach(function (m) { head.append(el("th", "num m-" + m, m)); });
+    head.append(el("th", "num", "TỔNG"));
+    $("t-head").replaceChildren(head);
+
+    var body = $("t-body");
+    body.replaceChildren();
+    rows.forEach(function (r) {
+      var tr = el("tr");
+      var td = el("td", "set");
+      td.append(el("div", "n", r.name));
+      if (r.description && r.description !== r.name) td.append(el("div", "d", r.description));
+      tr.append(td);
+      used.forEach(function (m) {
+        var c = r.counts[m] || 0;
+        tr.append(el("td", "num " + (c ? "m-" + m : "zero"), c ? String(c) : "·"));
+      });
+      tr.append(el("td", "num total", String(r.total)));
+      body.append(tr);
+    });
+
+    var w = $("warnings");
+    w.hidden = out.messages.length === 0;
+    $("warn-title").textContent = out.messages.length + " cảnh báo khi đọc file";
+    var list = $("warn-list");
+    list.replaceChildren();
+    out.messages.forEach(function (m) { list.append(el("li", "", m)); });
+
+    var vars = out.collection.variable
+      .map(function (v) { return v.key; })
+      .filter(function (k) { return ["host", "username", "password", "token"].indexOf(k) >= 0; });
+    var hint = $("vars-hint");
+    hint.replaceChildren();
+    if (!vars.length) {
+      hint.textContent = "giá trị cho các biến khóa (số chứng từ, số dòng) khi cần";
+    } else {
+      vars.forEach(function (k, i) {
+        if (i) hint.append(i === vars.length - 1 ? " và " : ", ");
+        hint.append(el("code", "", k));
+      });
+    }
+  }
+
+  function fileBase() {
+    return (state.out.name || "odata").replace(/[^\w.-]+/g, "_").replace(/^_+|_+$/g, "") || "odata";
+  }
+
+  function save(filename, text) {
+    setStatus("Đang chuẩn bị file…");
+    downloadsReady.then(function (dl) {
+      if (dl) {
+        return dl.save({ filename: filename, data: text }).then(function () {
+          setStatus("Đã lưu " + filename);
+        });
+      }
+      var url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      setStatus("Đã tải " + filename);
+    }).catch(function (e) {
+      var code = e && e.code;
+      if (code === "declined") setStatus("Bạn đã hủy lưu file.");
+      else if (code === "rate_limited") setStatus("Đang có một hộp thoại lưu file mở. Hãy trả lời nó rồi thử lại.");
+      else showFallback(text, "Không lưu được file ở chế độ xem này. Hãy sao chép nội dung dưới đây và lưu thành " + filename + ".");
+    });
+  }
+
+  function showFallback(text, label) {
+    setStatus("");
+    $("fallback-label").textContent = label;
+    var ta = $("fallback-text");
+    ta.value = text;
+    $("fallback").hidden = false;
+    ta.focus();
+    ta.select();
+  }
+
+  $("dl-postman").addEventListener("click", function () {
+    if (state.out) save(fileBase() + ".postman_collection.json", JSON.stringify(state.out.collection, null, 2));
+  });
+  $("dl-openapi").addEventListener("click", function () {
+    if (state.out) save(fileBase() + ".openapi3.json", JSON.stringify(state.out.openapi, null, 2));
+  });
+  $("cp-postman").addEventListener("click", function () {
+    if (!state.out) return;
+    var text = JSON.stringify(state.out.collection, null, 2);
+    var manual = function () {
+      showFallback(text, "Trình duyệt chặn sao chép tự động. Nội dung đã được chọn sẵn, nhấn Ctrl+C để sao chép.");
+    };
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return manual();
+    navigator.clipboard.writeText(text).then(function () {
+      setStatus("Đã sao chép collection. Trong Postman: Import rồi dán vào.");
+    }, manual);
+  });
+
+  function readFile(file) {
+    if (!file) return;
+    file.text().then(function (text) {
+      load(text, file.name, file.size, false);
+    }, function () {
+      showError("Trình duyệt không đọc được file " + file.name + ".");
+    });
+  }
+  $("file").addEventListener("change", function (e) {
+    readFile(e.target.files[0]);
+    e.target.value = "";
+  });
+  var drop = $("drop");
+  ["dragenter", "dragover"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    readFile(e.dataTransfer && e.dataTransfer.files[0]);
+  });
+  $("paste-use").addEventListener("click", function () {
+    var text = $("paste").value.trim();
+    if (!text) { $("paste").focus(); return; }
+    load(text, "Nội dung đã dán", new Blob([text]).size, false);
+  });
+
+  var timer = 0;
+  function later() { clearTimeout(timer); timer = setTimeout(render, 200); }
+  ["opt-host", "opt-basepath", "opt-client", "opt-name"].forEach(function (id) {
+    $(id).addEventListener("input", later);
+  });
+  ["opt-scheme", "opt-auth", "opt-csrf", "opt-top", "opt-deep", "opt-batch"].forEach(function (id) {
+    $(id).addEventListener("change", render);
+  });
+
+  var sample = $("sample-edmx").textContent.trim();
+  load(sample, "ZDEMO_PURCHASEORDER_SRV.edmx", new Blob([sample]).size, true);
+})();
+</script>
+</body></html>

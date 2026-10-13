@@ -1,0 +1,674 @@
+<title>EDMX sang Postman</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a two-pane workbench. Source file and options sit in one ruled panel on the left;
+   the generated collection (name, downloads, folder table) reads openly on the right. Stacks on phones. */
+:root {
+  --bg: #f2f5f5;
+  --surface: #ffffff;
+  --sunken: #e9eeee;
+  --ink: #132120;
+  --muted: #586967;
+  --line: #d3dcdb;
+  --accent: #0b6b63;
+  --accent-ink: #ffffff;
+  --accent-soft: #d9ece9;
+  --get: #17764a;
+  --post: #9a5a08;
+  --patch: #6548bd;
+  --put: #235fa4;
+  --delete: #b3372f;
+  --warn-bg: #fbf1d8;
+  --warn-ink: #6d4a05;
+  --err-bg: #fbe5e2;
+  --err-ink: #8c241d;
+
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1413; --surface: #141d1c; --sunken: #0a100f; --ink: #e3ebea; --muted: #94a5a3;
+    --line: #283634; --accent: #55c7b9; --accent-ink: #05201d; --accent-soft: #15302d;
+    --get: #5fd093; --post: #e5a94e; --patch: #a996f0; --put: #7fb2ee; --delete: #f08a82;
+    --warn-bg: #2e2610; --warn-ink: #ecd08a; --err-bg: #331613; --err-ink: #f5aaa3;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1413; --surface: #141d1c; --sunken: #0a100f; --ink: #e3ebea; --muted: #94a5a3;
+  --line: #283634; --accent: #55c7b9; --accent-ink: #05201d; --accent-soft: #15302d;
+  --get: #5fd093; --post: #e5a94e; --patch: #a996f0; --put: #7fb2ee; --delete: #f08a82;
+  --warn-bg: #2e2610; --warn-ink: #ecd08a; --err-bg: #331613; --err-ink: #f5aaa3;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-inline: 20px;
+  padding-block: 28px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+code, .mono { font-family: var(--font-mono); }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Masthead */
+.masthead { display: flex; flex-direction: column; gap: 6px; }
+.masthead h1 {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+}
+.masthead h1 .arrow { color: var(--accent); font-family: var(--font-mono); font-weight: 500; }
+.masthead p { color: var(--muted); max-width: 65ch; }
+
+.bench {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+/* Left panel */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.panel > section { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.panel > section + section { border-top: 1px solid var(--line); }
+.label {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+
+.drop {
+  display: flex; flex-direction: column; gap: 4px;
+  border: 1.5px dashed var(--line); border-radius: var(--radius);
+  background: var(--bg);
+  padding: 16px; cursor: pointer;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop strong { font-weight: 600; }
+.drop span { color: var(--muted); font-size: 13.5px; }
+
+.current {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  font-size: 13.5px; min-width: 0;
+}
+.current .name { font-family: var(--font-mono); font-weight: 500; overflow-wrap: anywhere; min-width: 0; }
+.current .size { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 2px 7px; border-radius: 99px;
+  background: var(--warn-bg); color: var(--warn-ink);
+}
+
+details > summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+details > summary:hover { color: var(--ink); }
+details[open] > summary { margin-bottom: 10px; }
+.paste { display: flex; flex-direction: column; gap: 8px; }
+
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 13px; font-weight: 500; }
+.field small, .check small { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+@media (max-width: 420px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+
+input[type="text"], select, textarea {
+  width: 100%; min-width: 0;
+  font: inherit; font-size: 14px; color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 7px 9px;
+}
+input[type="text"].mono, textarea { font-family: var(--font-mono); font-size: 13px; }
+textarea { resize: vertical; min-height: 96px; }
+input[type="text"]:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent);
+}
+
+.checks { display: flex; flex-direction: column; gap: 12px; }
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.check input { margin: 4px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
+.check label { font-size: 14px; font-weight: 500; }
+.check small { grid-column: 2; }
+
+/* Buttons */
+.btn {
+  font: inherit; font-size: 14px; font-weight: 600;
+  border-radius: var(--radius); border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+  padding: 8px 14px; cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.quiet { background: transparent; }
+.btn.small { font-size: 13px; padding: 6px 10px; align-self: flex-start; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Result */
+.result { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.head { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.head h2 {
+  font-family: var(--font-mono); font-size: 20px; font-weight: 600; line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 13.5px; }
+.meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.server {
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.status { font-size: 13.5px; color: var(--muted); min-height: 1.55em; }
+
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+tbody tr:last-child td { border-bottom: 0; }
+thead th {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--muted); background: var(--bg); white-space: nowrap;
+}
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+td.set { min-width: 180px; }
+td.set .n { font-family: var(--font-mono); font-weight: 500; overflow-wrap: anywhere; }
+td.set .d { color: var(--muted); font-size: 12.5px; }
+td.num.zero { color: var(--line); }
+td.total { font-weight: 600; }
+.m-GET { color: var(--get); } .m-POST { color: var(--post); } .m-PATCH { color: var(--patch); }
+.m-PUT { color: var(--put); } .m-DELETE { color: var(--delete); }
+td.num:not(.zero):not(.total) { font-weight: 600; }
+
+.note {
+  border-radius: var(--radius); padding: 12px 14px; font-size: 13.5px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.note.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.note.err { background: var(--err-bg); color: var(--err-ink); }
+.note summary { color: inherit; font-weight: 600; }
+.note ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.note li { font-family: var(--font-mono); font-size: 12px; overflow-wrap: anywhere; }
+.note p { overflow-wrap: anywhere; }
+
+.steps { display: flex; flex-direction: column; gap: 10px; }
+.steps ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+.steps code {
+  font-size: 12.5px; background: var(--sunken); border-radius: 4px; padding: 1px 5px;
+}
+.fallback { display: flex; flex-direction: column; gap: 6px; }
+.fallback textarea { min-height: 160px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .drop, .btn { transition: border-color 0.12s, background-color 0.12s; }
+}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>EDMX <span class="arrow">→</span> Postman</h1>
+    <p>Đổi file metadata OData (<code>.edmx</code>) thành Postman Collection và OpenAPI 3. File được xử lý ngay trong trình duyệt, không gửi đi đâu.</p>
+  </header>
+
+  <div class="bench">
+    <div class="panel">
+      <section aria-labelledby="l-src">
+        <div class="label" id="l-src">File nguồn</div>
+        <label class="drop" id="drop" for="file">
+          <input class="sr-only" type="file" id="file" accept=".edmx,.xml,text/xml,application/xml">
+          <strong>Chọn file .edmx hoặc kéo thả vào đây</strong>
+          <span>Nhận metadata OData V2, V3 và V4 (nội dung của <code>$metadata</code>).</span>
+        </label>
+        <div class="current" id="current">
+          <span class="name" id="cur-name"></span>
+          <span class="size" id="cur-size"></span>
+          <span class="tag" id="cur-sample">FILE MẪU</span>
+        </div>
+        <details id="paste-box">
+          <summary>Hoặc dán nội dung XML</summary>
+          <div class="paste">
+            <label class="sr-only" for="paste">Nội dung XML</label>
+            <textarea id="paste" spellcheck="false" placeholder="&lt;edmx:Edmx Version=&quot;1.0&quot; ..."></textarea>
+            <button class="btn small" type="button" id="paste-use">Dùng nội dung này</button>
+          </div>
+        </details>
+      </section>
+
+      <section aria-labelledby="l-url">
+        <div class="label" id="l-url">Địa chỉ service</div>
+        <div class="fields">
+          <div class="field">
+            <label for="opt-scheme">Giao thức</label>
+            <select id="opt-scheme"><option value="https">https</option><option value="http">http</option></select>
+          </div>
+          <div class="field">
+            <label for="opt-host">Host</label>
+            <input class="mono" type="text" id="opt-host" value="{{host}}" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="field wide">
+            <label for="opt-basepath">Đường dẫn service</label>
+            <input class="mono" type="text" id="opt-basepath" spellcheck="false" autocomplete="off">
+            <small>Tự lấy từ file khi có. Để host là <code>{{host}}</code> thì bạn điền host thật trong Postman.</small>
+          </div>
+          <div class="field">
+            <label for="opt-client">sap-client</label>
+            <input class="mono" type="text" id="opt-client" placeholder="ví dụ 100" inputmode="numeric" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="opt-auth">Xác thực</label>
+            <select id="opt-auth">
+              <option value="basic">Basic (user/password)</option>
+              <option value="bearer">Bearer token</option>
+              <option value="none">Không đặt</option>
+            </select>
+          </div>
+          <div class="field wide">
+            <label for="opt-name">Tên collection</label>
+            <input type="text" id="opt-name" spellcheck="false" autocomplete="off">
+            <small>Tài khoản không nhập ở đây. Collection dùng biến để bạn điền trong Postman.</small>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="l-opt">
+        <div class="label" id="l-opt">Tùy chọn collection</div>
+        <div class="checks">
+          <div class="check">
+            <input type="checkbox" id="opt-csrf" checked>
+            <label for="opt-csrf">Tự lấy CSRF token</label>
+            <small>Thêm script chạy trước mỗi POST/PATCH/DELETE để lấy <code>x-csrf-token</code>. Cần cho SAP Gateway.</small>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="opt-top" checked>
+            <label for="opt-top">Bật sẵn <code>$top=50</code></label>
+            <small>Request đọc danh sách chỉ lấy 50 dòng đầu, tránh kéo cả bảng.</small>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="opt-deep" checked>
+            <label for="opt-deep">Body tạo mới kèm dòng con</label>
+            <small>POST có sẵn khung cho các navigation dạng danh sách (deep insert), ví dụ header kèm item.</small>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="opt-batch">
+            <label for="opt-batch">Bỏ request <code>$batch</code></label>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="result" id="result">
+      <div class="note err" id="error" hidden>
+        <strong>Không đọc được file này</strong>
+        <p id="error-text"></p>
+        <p>Hãy kiểm tra đây có đúng là nội dung của <code>$metadata</code> (bắt đầu bằng <code>&lt;edmx:Edmx</code>).</p>
+      </div>
+
+      <div id="ok" class="result">
+        <div class="head">
+          <div class="label">Collection sinh ra</div>
+          <h2 id="r-name"></h2>
+          <div class="meta" id="r-meta"></div>
+          <div class="server" id="r-server"></div>
+        </div>
+
+        <div>
+          <div class="actions">
+            <button class="btn primary" type="button" id="dl-postman">Tải Postman Collection</button>
+            <button class="btn" type="button" id="dl-openapi">Tải OpenAPI 3</button>
+            <button class="btn quiet" type="button" id="cp-postman">Sao chép collection</button>
+          </div>
+          <div class="status" id="status" role="status" aria-live="polite"></div>
+          <div class="fallback" id="fallback" hidden>
+            <label for="fallback-text" id="fallback-label"></label>
+            <textarea id="fallback-text" readonly spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="tablebox">
+          <table>
+            <thead id="t-head"></thead>
+            <tbody id="t-body"></tbody>
+          </table>
+        </div>
+
+        <details class="note warn" id="warnings" hidden>
+          <summary id="warn-title"></summary>
+          <p>Đây là các annotation trong file trỏ tới phần tử không có trong metadata. Chúng bị bỏ qua, các request vẫn được sinh đủ.</p>
+          <ul id="warn-list"></ul>
+        </details>
+
+        <div class="steps">
+          <div class="label">Đưa vào Postman</div>
+          <ol>
+            <li>Bấm <b>Tải Postman Collection</b> để lưu file <code>.postman_collection.json</code>.</li>
+            <li>Trong Postman bấm <b>Import</b> rồi kéo file vừa tải vào.</li>
+            <li>Mở tab <b>Variables</b> của collection, điền <span id="vars-hint"></span>.</li>
+            <li>Chạy thử một request GET. Body của PATCH để trống có chủ ý: danh sách field nằm trong phần mô tả request.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/plain" id="sample-edmx"><?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:sap="http://www.sap.com/Protocols/SAPData">
+ <edmx:DataServices m:DataServiceVersion="2.0">
+  <Schema Namespace="ZDEMO_PURCHASEORDER_SRV" xml:lang="en" sap:schema-version="1" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+   <EntityType Name="A_PurchaseOrderType" sap:label="Purchase Order" sap:content-version="1">
+    <Key><PropertyRef Name="PurchaseOrder"/></Key>
+    <Property Name="PurchaseOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:label="Purchase Order"/>
+    <Property Name="CompanyCode" Type="Edm.String" MaxLength="4" sap:label="Company Code"/>
+    <Property Name="PurchaseOrderType" Type="Edm.String" MaxLength="4" sap:label="Document Type"/>
+    <Property Name="Supplier" Type="Edm.String" MaxLength="10" sap:label="Supplier"/>
+    <Property Name="PurchasingOrganization" Type="Edm.String" MaxLength="4" sap:label="Purchasing Org."/>
+    <Property Name="PurchasingGroup" Type="Edm.String" MaxLength="3" sap:label="Purchasing Group"/>
+    <Property Name="PurchaseOrderDate" Type="Edm.DateTime" Precision="0" sap:display-format="Date" sap:label="Purchase Order Date"/>
+    <Property Name="DocumentCurrency" Type="Edm.String" MaxLength="5" sap:label="Currency" sap:semantics="currency-code"/>
+    <NavigationProperty Name="to_PurchaseOrderItem" Relationship="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" FromRole="FromRole_assoc_Header_Item" ToRole="ToRole_assoc_Header_Item"/>
+   </EntityType>
+   <EntityType Name="A_PurchaseOrderItemType" sap:label="Item" sap:content-version="1">
+    <Key><PropertyRef Name="PurchaseOrder"/><PropertyRef Name="PurchaseOrderItem"/></Key>
+    <Property Name="PurchaseOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:label="Purchase Order"/>
+    <Property Name="PurchaseOrderItem" Type="Edm.String" Nullable="false" MaxLength="5" sap:display-format="NonNegative" sap:label="Item"/>
+    <Property Name="Material" Type="Edm.String" MaxLength="40" sap:label="Material"/>
+    <Property Name="Plant" Type="Edm.String" MaxLength="4" sap:label="Plant"/>
+    <Property Name="OrderQuantity" Type="Edm.Decimal" Precision="13" Scale="3" sap:unit="PurchaseOrderQuantityUnit" sap:label="Order Quantity"/>
+    <Property Name="PurchaseOrderQuantityUnit" Type="Edm.String" MaxLength="3" sap:label="Order Unit" sap:semantics="unit-of-measure"/>
+    <Property Name="NetPriceAmount" Type="Edm.Decimal" Precision="12" Scale="3" sap:label="Net Order Price"/>
+    <NavigationProperty Name="to_PurchaseOrder" Relationship="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" FromRole="ToRole_assoc_Header_Item" ToRole="FromRole_assoc_Header_Item"/>
+   </EntityType>
+   <Association Name="assoc_Header_Item" sap:content-version="1">
+    <End Type="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderType" Multiplicity="1" Role="FromRole_assoc_Header_Item"/>
+    <End Type="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderItemType" Multiplicity="*" Role="ToRole_assoc_Header_Item"/>
+   </Association>
+   <EntityContainer Name="ZDEMO_PURCHASEORDER_SRV_Entities" m:IsDefaultEntityContainer="true" sap:supported-formats="atom json xlsx">
+    <EntitySet Name="A_PurchaseOrder" EntityType="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderType" sap:content-version="1"/>
+    <EntitySet Name="A_PurchaseOrderItem" EntityType="ZDEMO_PURCHASEORDER_SRV.A_PurchaseOrderItemType" sap:content-version="1"/>
+    <AssociationSet Name="assoc_Header_Item_Set" Association="ZDEMO_PURCHASEORDER_SRV.assoc_Header_Item" sap:content-version="1">
+     <End EntitySet="A_PurchaseOrder" Role="FromRole_assoc_Header_Item"/>
+     <End EntitySet="A_PurchaseOrderItem" Role="ToRole_assoc_Header_Item"/>
+    </AssociationSet>
+   </EntityContainer>
+   <atom:link rel="self" href="/sap/opu/odata/sap/ZDEMO_PURCHASEORDER_SRV/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+  </Schema>
+ </edmx:DataServices>
+</edmx:Edmx>
+</script>
+
+<script>/*__BUNDLE__*/</script>
+<script>
+(function () {
+  "use strict";
+  var T = window.EdmxTool;
+  var $ = function (id) { return document.getElementById(id); };
+  var METHOD_ORDER = ["GET", "POST", "PATCH", "PUT", "DELETE"];
+  var state = { xml: "", fileName: "", size: 0, isSample: false, info: null, out: null };
+
+  // The downloads capability only exists inside the Claude viewer; anywhere else
+  // (a saved copy opened from disk) a plain blob link does the job.
+  var downloadsReady = window.claude && typeof window.claude.use === "function"
+    ? window.claude.use("downloads").catch(function () { return null; })
+    : Promise.resolve(null);
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function fmtSize(bytes) {
+    return bytes < 1024 ? bytes + " B" : Math.round(bytes / 1024).toLocaleString("vi-VN") + " KB";
+  }
+
+  function options() {
+    var basePath = $("opt-basepath").value.trim().replace(/\/+$/, "");
+    if (basePath && basePath[0] !== "/") basePath = "/" + basePath;
+    return {
+      scheme: $("opt-scheme").value,
+      host: $("opt-host").value.trim() || "{{host}}",
+      basePath: basePath,
+      sapClient: $("opt-client").value.trim(),
+      name: $("opt-name").value.trim() || (state.info && state.info.namespace) || "OData service",
+      auth: $("opt-auth").value,
+      csrf: $("opt-csrf").checked,
+      top: $("opt-top").checked ? 50 : 0,
+      deepInsert: $("opt-deep").checked,
+      skipBatch: $("opt-batch").checked
+    };
+  }
+
+  function showError(message) {
+    state.out = null;
+    $("error-text").textContent = message;
+    $("error").hidden = false;
+    $("ok").hidden = true;
+  }
+
+  function setStatus(text) { $("status").textContent = text || ""; }
+
+  function load(xml, fileName, size, isSample) {
+    state.xml = xml;
+    state.fileName = fileName;
+    state.size = size;
+    state.isSample = isSample;
+    $("cur-name").textContent = fileName;
+    $("cur-size").textContent = fmtSize(size);
+    $("cur-sample").hidden = !isSample;
+    $("fallback").hidden = true;
+    setStatus("");
+    try {
+      state.info = T.inspect(xml);
+    } catch (e) {
+      state.info = null;
+      showError(String((e && e.message) || e).split(String.fromCharCode(10))[0]);
+      return;
+    }
+    $("opt-basepath").value = state.info.basePath;
+    $("opt-name").value = state.info.namespace;
+    render();
+  }
+
+  function render() {
+    if (!state.info) return;
+    var o = options();
+    var out;
+    try {
+      var r = T.toOpenApi(state.xml, o);
+      out = { openapi: r.openapi, messages: r.messages, collection: T.toPostman(r.openapi, o), name: o.name };
+    } catch (e) {
+      showError(String((e && e.message) || e).split(String.fromCharCode(10))[0]);
+      return;
+    }
+    state.out = out;
+    $("error").hidden = true;
+    $("ok").hidden = false;
+
+    var rows = T.summarize(out.collection);
+    var total = rows.reduce(function (n, r) { return n + r.total; }, 0);
+    $("r-name").textContent = o.name;
+    $("r-server").textContent = out.openapi.servers[0].url;
+
+    var meta = $("r-meta");
+    meta.replaceChildren();
+    [
+      ["OData", "V" + String(state.info.version).replace(/\.0$/, "")],
+      ["entity set", state.info.entitySets.length],
+      ["thư mục", rows.length],
+      ["request", total]
+    ].forEach(function (pair, i) {
+      var s = el("span");
+      if (i === 0) { s.append(pair[0] + " ", el("b", "", pair[1])); }
+      else { s.append(el("b", "", String(pair[1])), " " + pair[0]); }
+      meta.append(s);
+    });
+
+    var used = METHOD_ORDER.filter(function (m) {
+      return rows.some(function (r) { return r.counts[m]; });
+    });
+    var head = el("tr");
+    head.append(el("th", "", "THƯ MỤC"));
+    used.forEach(function (m) { head.append(el("th", "num m-" + m, m)); });
+    head.append(el("th", "num", "TỔNG"));
+    $("t-head").replaceChildren(head);
+
+    var body = $("t-body");
+    body.replaceChildren();
+    rows.forEach(function (r) {
+      var tr = el("tr");
+      var td = el("td", "set");
+      td.append(el("div", "n", r.name));
+      if (r.description && r.description !== r.name) td.append(el("div", "d", r.description));
+      tr.append(td);
+      used.forEach(function (m) {
+        var c = r.counts[m] || 0;
+        tr.append(el("td", "num " + (c ? "m-" + m : "zero"), c ? String(c) : "·"));
+      });
+      tr.append(el("td", "num total", String(r.total)));
+      body.append(tr);
+    });
+
+    var w = $("warnings");
+    w.hidden = out.messages.length === 0;
+    $("warn-title").textContent = out.messages.length + " cảnh báo khi đọc file";
+    var list = $("warn-list");
+    list.replaceChildren();
+    out.messages.forEach(function (m) { list.append(el("li", "", m)); });
+
+    var vars = out.collection.variable
+      .map(function (v) { return v.key; })
+      .filter(function (k) { return ["host", "username", "password", "token"].indexOf(k) >= 0; });
+    var hint = $("vars-hint");
+    hint.replaceChildren();
+    if (!vars.length) {
+      hint.textContent = "giá trị cho các biến khóa (số chứng từ, số dòng) khi cần";
+    } else {
+      vars.forEach(function (k, i) {
+        if (i) hint.append(i === vars.length - 1 ? " và " : ", ");
+        hint.append(el("code", "", k));
+      });
+    }
+  }
+
+  function fileBase() {
+    return (state.out.name || "odata").replace(/[^\w.-]+/g, "_").replace(/^_+|_+$/g, "") || "odata";
+  }
+
+  function save(filename, text) {
+    setStatus("Đang chuẩn bị file…");
+    downloadsReady.then(function (dl) {
+      if (dl) {
+        return dl.save({ filename: filename, data: text }).then(function () {
+          setStatus("Đã lưu " + filename);
+        });
+      }
+      var url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      setStatus("Đã tải " + filename);
+    }).catch(function (e) {
+      var code = e && e.code;
+      if (code === "declined") setStatus("Bạn đã hủy lưu file.");
+      else if (code === "rate_limited") setStatus("Đang có một hộp thoại lưu file mở. Hãy trả lời nó rồi thử lại.");
+      else showFallback(text, "Không lưu được file ở chế độ xem này. Hãy sao chép nội dung dưới đây và lưu thành " + filename + ".");
+    });
+  }
+
+  function showFallback(text, label) {
+    setStatus("");
+    $("fallback-label").textContent = label;
+    var ta = $("fallback-text");
+    ta.value = text;
+    $("fallback").hidden = false;
+    ta.focus();
+    ta.select();
+  }
+
+  $("dl-postman").addEventListener("click", function () {
+    if (state.out) save(fileBase() + ".postman_collection.json", JSON.stringify(state.out.collection, null, 2));
+  });
+  $("dl-openapi").addEventListener("click", function () {
+    if (state.out) save(fileBase() + ".openapi3.json", JSON.stringify(state.out.openapi, null, 2));
+  });
+  $("cp-postman").addEventListener("click", function () {
+    if (!state.out) return;
+    var text = JSON.stringify(state.out.collection, null, 2);
+    var manual = function () {
+      showFallback(text, "Trình duyệt chặn sao chép tự động. Nội dung đã được chọn sẵn, nhấn Ctrl+C để sao chép.");
+    };
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return manual();
+    navigator.clipboard.writeText(text).then(function () {
+      setStatus("Đã sao chép collection. Trong Postman: Import rồi dán vào.");
+    }, manual);
+  });
+
+  function readFile(file) {
+    if (!file) return;
+    file.text().then(function (text) {
+      load(text, file.name, file.size, false);
+    }, function () {
+      showError("Trình duyệt không đọc được file " + file.name + ".");
+    });
+  }
+  $("file").addEventListener("change", function (e) {
+    readFile(e.target.files[0]);
+    e.target.value = "";
+  });
+  var drop = $("drop");
+  ["dragenter", "dragover"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    readFile(e.dataTransfer && e.dataTransfer.files[0]);
+  });
+  $("paste-use").addEventListener("click", function () {
+    var text = $("paste").value.trim();
+    if (!text) { $("paste").focus(); return; }
+    load(text, "Nội dung đã dán", new Blob([text]).size, false);
+  });
+
+  var timer = 0;
+  function later() { clearTimeout(timer); timer = setTimeout(render, 200); }
+  ["opt-host", "opt-basepath", "opt-client", "opt-name"].forEach(function (id) {
+    $(id).addEventListener("input", later);
+  });
+  ["opt-scheme", "opt-auth", "opt-csrf", "opt-top", "opt-deep", "opt-batch"].forEach(function (id) {
+    $(id).addEventListener("change", render);
+  });
+
+  var sample = $("sample-edmx").textContent.trim();
+  load(sample, "ZDEMO_PURCHASEORDER_SRV.edmx", new Blob([sample]).size, true);
+})();
+</script>
